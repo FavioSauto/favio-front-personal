@@ -5,10 +5,21 @@ import { useAccount, useDisconnect } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
+import { useIsWrongNetwork, useNetworkActions } from '@/providers/stores/storeProvider';
 
 export default function ConnectButton() {
   const { isConnecting, isConnected, chain } = useAccount();
-  const isWrongNetwork = isConnected && !chain;
+  const { setIsWrongNetwork } = useNetworkActions();
+  const isWrongNetwork = useIsWrongNetwork();
+
+  useEffect(() => {
+    if (isConnected && !chain) {
+      setIsWrongNetwork(true);
+    } else {
+      setIsWrongNetwork(false);
+    }
+  }, [isConnected, chain, setIsWrongNetwork]);
 
   const { openConnectModal } = useConnectModal();
   const { openAccountModal } = useAccountModal();

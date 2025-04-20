@@ -246,7 +246,7 @@ const StatsPage = () => {
         </div>
 
         {/* Activity Chart */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle className="text-lg">Activity</CardTitle>
           </CardHeader>
@@ -269,7 +269,7 @@ const StatsPage = () => {
               <span>May 10</span>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Recent Activity */}
         <Card>

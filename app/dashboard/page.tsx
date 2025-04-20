@@ -1,141 +1,262 @@
-// ✅ Dashboard page completed
 'use client';
+import { useEffect } from 'react';
+import { useOptimistic, useTransition } from 'react';
+import { Wallet, Send, Plus, History } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { ActionButton, MintFormData, TransferFormData, ApproveFormData } from '@/components/shared/ActionButton';
+import {
+  useDaiBalances,
+  useUsdcBalances,
+  useBalanceActions,
+  useEventsActions,
+  useEvents,
+} from '@/providers/stores/storeProvider';
+import { useAccount } from 'wagmi';
 
-import { useState } from 'react';
-import { ActivityChart } from '@/components/reusable/activity-chart';
-import { QuickActionButton } from '@/components/reusable/quick-action-button';
-import { TransactionTable } from '@/components/reusable/transaction-table';
-import { TokenCard } from '@/components/reusable/token-card';
-import { PlusCircle, Send, Clock } from 'lucide-react';
+const TokenDashboard = () => {
+  const { address: walletAddress } = useAccount();
+  const daiBalance = useDaiBalances();
+  const usdcBalance = useUsdcBalances();
+  const events = useEvents();
+  const { fetchEvents } = useEventsActions();
+  const { mintToken, transferToken, approveToken } = useBalanceActions();
+  const { fetchTokenBalances } = useBalanceActions();
 
-// Sample data for the dashboard
-const sampleTransactions = [
-  {
-    id: '1',
-    type: 'send' as const,
-    token: 'DAI' as const,
-    amount: '100.000000',
-    from: '0x123...abc',
-    to: '0x456...def',
-    timestamp: '2 hours ago',
-    status: 'completed' as const,
-  },
-  {
-    id: '2',
-    type: 'receive' as const,
-    token: 'USDC' as const,
-    amount: '50.000000',
-    from: '0x789...ghi',
-    to: '0x123...abc',
-    timestamp: '5 hours ago',
-    status: 'completed' as const,
-  },
-];
+  // Add useTransition hook
+  const [isPending, startOptimisticTransition] = useTransition();
 
-const sampleChartData = [
-  { date: 'Mar 31', value: 1000 },
-  { date: 'Apr 1', value: 1200 },
-  { date: 'Apr 2', value: 900 },
-  { date: 'Apr 3', value: 1500 },
-  { date: 'Apr 4', value: 1300 },
-];
+  // Optimistic updates for USDC balance
+  const [optimisticUsdcBalance, addOptimisticUsdcUpdate] = useOptimistic(
+    { balance: usdcBalance.balance ?? 0 },
+    (state, action) => {
+      switch (action.type) {
+        case 'mint':
+          return { balance: state.balance + Number(action.amount) };
+        case 'transfer':
+          return { balance: state.balance - Number(action.amount) };
+        default:
+          return state;
+      }
+    }
+  );
 
-export default function DashboardPage() {
-  const [selectedToken, setSelectedToken] = useState<'DAI' | 'USDC'>('DAI');
+  // Optimistic updates for DAI balance
+  const [optimisticDaiBalance, addOptimisticDaiUpdate] = useOptimistic(
+    { balance: daiBalance.balance ?? 0 },
+    (state, action) => {
+      switch (action.type) {
+        case 'mint':
+          return { balance: state.balance + Number(action.amount) };
+        case 'transfer':
+          return { balance: state.balance - Number(action.amount) };
+        default:
+          return state;
+      }
+    }
+  );
+
+  // Optimistic updates for events
+  const [optimisticEvents, addOptimisticEvent] = useOptimistic(events, (currentEvents, newEvent) => {
+    return [
+      {
+        id: `optimistic-${Date.now()}`,
+        transactionHash: 'pending',
+        ...newEvent,
+      },
+      ...currentEvents,
+    ];
+  });
+
+  useEffect(() => {
+    fetchTokenBalances(walletAddress);
+    fetchEvents(walletAddress);
+  }, [fetchTokenBalances, walletAddress, fetchEvents]);
+
+  async function handleMint(data: MintFormData) {
+    // Wrap optimistic updates in startTransition
+    startOptimisticTransition(() => {
+      if (data.tokenType === 'USDC' || !data.tokenType) {
+        addOptimisticUsdcUpdate({ type: 'mint', amount: data.amount });
+
+        // Add optimistic event
+        addOptimisticEvent({
+          type: 'Mint',
+          amount: data.amount,
+          status: 'Pending',
+        });
+      } else if (data.tokenType === 'DAI') {
+        addOptimisticDaiUpdate({ type: 'mint', amount: data.amount });
+
+        // Add optimistic event
+        addOptimisticEvent({
+          type: 'Mint',
+          amount: data.amount,
+          status: 'Pending',
+        });
+      }
+    });
+
+    try {
+      // Perform the actual transaction
+      await mintToken(data.tokenType || 'USDC', data.amount);
+
+      // After transaction is successful, fetch the real updated balances and events
+      fetchTokenBalances(walletAddress);
+      fetchEvents(walletAddress);
+    } catch (error) {
+      console.error('Mint failed:', error);
+      // The state will automatically revert to the confirmed state
+      // when fetchTokenBalances runs after this error
+      fetchTokenBalances(walletAddress);
+      fetchEvents(walletAddress);
+    }
+  }
+
+  async function handleTransfer(data: TransferFormData) {
+    // Wrap optimistic updates in startTransition
+    startOptimisticTransition(() => {
+      if (data.tokenType === 'USDC' || !data.tokenType) {
+        addOptimisticUsdcUpdate({ type: 'transfer', amount: data.amount });
+
+        // Add optimistic event
+        addOptimisticEvent({
+          type: 'Transfer',
+          amount: data.amount,
+          recipient: data.address,
+          status: 'Pending',
+        });
+      } else if (data.tokenType === 'DAI') {
+        addOptimisticDaiUpdate({ type: 'transfer', amount: data.amount });
+
+        // Add optimistic event
+        addOptimisticEvent({
+          type: 'Transfer',
+          amount: data.amount,
+          recipient: data.address,
+          status: 'Pending',
+        });
+      }
+    });
+
+    try {
+      // Perform the actual transaction
+      await transferToken(data.tokenType || 'USDC', data.address, data.amount);
+
+      // After transaction is successful, fetch the real updated balances and events
+      fetchTokenBalances(walletAddress);
+      fetchEvents(walletAddress);
+    } catch (error) {
+      console.error('Transfer failed:', error);
+      // The state will automatically revert to the confirmed state
+      // when fetchTokenBalances runs after this error
+      fetchTokenBalances(walletAddress);
+      fetchEvents(walletAddress);
+    }
+  }
+
+  async function handleApprove(data: ApproveFormData) {
+    // Wrap optimistic updates in startTransition
+    startOptimisticTransition(() => {
+      // Add optimistic event for the approve action
+      addOptimisticEvent({
+        type: 'Approve',
+        amount: data.allowance,
+        spender: data.address,
+        status: 'Pending',
+      });
+    });
+
+    try {
+      // Perform the actual transaction
+      await approveToken(data.tokenType || 'USDC', data.address, data.allowance);
+
+      // After transaction is successful, fetch the real updated events
+      fetchEvents(walletAddress);
+    } catch (error) {
+      console.error('Approve failed:', error);
+      fetchEvents(walletAddress);
+    }
+  }
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TokenCard
-          token="DAI"
-          balance="1,000.000000"
-          value="$1,000.00"
-          className="bg-[#7C3AED] text-white rounded-2xl shadow-lg p-4"
-        />
-        <TokenCard
-          token="USDC"
-          balance="500.000000"
-          value="$500.00"
-          className="bg-[#10B981] text-white rounded-2xl shadow-lg p-4"
-        />
-      </div>
+    <>
+      {/* Header */}
+      <PageHeader title="Token Dashboard" icon={<Wallet className="w-6 h-6 text-gray-900" />} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Quick Actions</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <QuickActionButton
-              icon={PlusCircle}
-              label="Mint"
-              onClick={() => console.log('Mint clicked')}
-              className="bg-black aspect-square text-white hover:bg-gray-900 rounded-2xl p-4"
-            />
-            <QuickActionButton
-              icon={Send}
-              label="Transfer"
-              onClick={() => console.log('Transfer clicked')}
-              className="bg-black aspect-square text-white hover:bg-gray-900 rounded-2xl p-4"
-            />
-            <QuickActionButton
-              icon={Clock}
-              label="Approve"
-              onClick={() => console.log('Approve clicked')}
-              className="bg-black aspect-square text-white hover:bg-gray-900 rounded-2xl p-4"
-            />
-          </div>
+      {/* Token Cards */}
+      <div className="flex flex-col md:flex-row md:gap-6 relative pt-4">
+        <div className="relative w-full md:w-1/2 transition-all duration-300 ease-in-out hover:-translate-y-2 hover:rotate-1">
+          <Card className="py-2 bg-gradient-to-br from-indigo-500 to-purple-600 text-white transition-shadow duration-300 hover:shadow-xl">
+            <CardContent className="px-6 py-2 space-y-4">
+              <div className="space-y-1">
+                <p className="text-sm text-white/70">DAI</p>
+                <h2 className="text-2xl font-semibold">DAI</h2>
+              </div>
+              <div className="space-y-1">
+                <p className="text-4xl font-bold tracking-tight">{optimisticDaiBalance.balance}</p>
+                <p className="text-base text-white/70">18 decimals</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Activity Chart</h2>
-          <div className="bg-white rounded-2xl p-6">
-            <ActivityChart
-              data={sampleChartData}
-              title="24h Trading Volume"
-              className="h-[300px]"
-              options={{
-                grid: {
-                  strokeDashArray: 5,
-                  color: '#e5e7eb',
-                },
-                fill: {
-                  gradient: {
-                    opacityFrom: 0.2,
-                    opacityTo: 0.05,
-                  },
-                },
-                colors: ['#7C3AED'],
-              }}
-            />
-          </div>
+        <div className="relative w-full md:w-1/2 -mt-36 md:mt-0 transition-all duration-300 ease-in-out hover:-translate-y-2 hover:rotate-1">
+          <Card className="py-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white transition-shadow duration-300 hover:shadow-xl">
+            <CardContent className="px-6 py-2 space-y-4">
+              <div className="space-y-1">
+                <p className="text-sm text-white/70">USDC</p>
+                <h2 className="text-2xl font-semibold">USDC</h2>
+              </div>
+              <div className="space-y-1">
+                <p className="text-4xl font-bold tracking-tight">{optimisticUsdcBalance.balance}</p>
+                <p className="text-base text-white/70">6 decimals</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Recent Transactions</h2>
-          <div className="flex gap-2">
-            <button
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedToken === 'DAI' ? 'bg-[#7C3AED] text-white' : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-              onClick={() => setSelectedToken('DAI')}
-            >
-              DAI
-            </button>
-            <button
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedToken === 'USDC' ? 'bg-[#10B981] text-white' : 'bg-gray-100 hover:bg-gray-200'
-              }`}
-              onClick={() => setSelectedToken('USDC')}
-            >
-              USDC
-            </button>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl overflow-hidden">
-          <TransactionTable transactions={sampleTransactions} />
-        </div>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-3 gap-3 md:gap-6">
+        <ActionButton onFormSubmit={handleMint} icon={<Plus className="w-6 h-6" />} label="Mint" />
+        <ActionButton onFormSubmit={handleTransfer} icon={<Send className="w-6 h-6" />} label="Transfer" />
+        <ActionButton onFormSubmit={handleApprove} icon={<History className="w-6 h-6" />} label="Approve" />
       </div>
-    </div>
+
+      {/* Recent Transactions */}
+      <Card className="transition-all duration-300 hover:shadow-md">
+        <CardHeader>
+          <CardTitle className="text-lg">Recent Transactions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {optimisticEvents.map((event, index) => (
+                <TableRow
+                  key={event.id || event.transactionHash || index}
+                  className={`transition-colors hover:bg-gray-50 ${event.status === 'Pending' ? 'opacity-70' : ''}`}
+                >
+                  <TableCell>{event.type}</TableCell>
+                  <TableCell>{event.amount}</TableCell>
+                  <TableCell className={event.status === 'Pending' ? 'text-yellow-500' : 'text-green-500'}>
+                    {event.status || 'Success'}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </>
   );
-}
+};
+
+export default TokenDashboard;

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 
 import Providers from '@/providers/globalProvider';
+import { BottomNav } from '@/components/shared/BottomNav';
 
 import '@rainbow-me/rainbowkit/styles.css';
 import './globals.css';
@@ -22,10 +23,16 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body>
+      <head>{/* <script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" /> */}</head>
+      <body className="relative">
         <Providers cookie={cookie}>
           <Header />
-          {children}
+          <div className="relative bg-gray-50 overflow-hidden">
+            <div className="h-full pb-20 p-6 flex flex-col gap-6 overflow-y-auto">{children}</div>
+            <div className="fixed bottom-0 left-0 right-0 z-50">
+              <BottomNav />
+            </div>
+          </div>
         </Providers>
       </body>
     </html>
