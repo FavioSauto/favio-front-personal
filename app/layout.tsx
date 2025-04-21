@@ -27,12 +27,14 @@ export default async function RootLayout({
       <body className="relative">
         <Providers cookie={cookie}>
           <Header />
-          <div className="relative bg-gray-50 overflow-hidden">
-            <div className="h-full pb-20 p-6 flex flex-col gap-6 overflow-y-auto">{children}</div>
+          <main className="relative bg-gray-50 overflow-hidden">
+            <div className="h-full pb-20 flex flex-col gap-6 overflow-y-auto lg:max-w-[1024px] lg:mx-auto">
+              {children}
+            </div>
             <div className="fixed bottom-0 left-0 right-0 z-50">
               <BottomNav />
             </div>
-          </div>
+          </main>
         </Providers>
       </body>
     </html>
