@@ -28,7 +28,7 @@ export interface ApproveFormData {
   allowance: string;
 }
 
-type ActionFormData = MintFormData | TransferFormData | ApproveFormData;
+export type ActionFormData = MintFormData | TransferFormData | ApproveFormData;
 
 // Use React.ComponentProps to get the props type of the Button component
 type ButtonProps = React.ComponentProps<typeof Button>;
