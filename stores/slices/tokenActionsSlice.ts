@@ -130,21 +130,21 @@ export interface TokenActionsSlice {
     setTransferFormValues: (values: { amount?: string; recipientAddress?: string }) => void;
     setTransferFormValidationErrors: (errors: { amount?: string; recipientAddress?: string }) => void;
     setTransferTransactionState: (transactionState: TransactionState) => void;
-    transferToken: (token: 'DAI' | 'USDC', recipient: string, amount: string) => Promise<void>;
+    transferToken: (token: 'DAI' | 'USDC', recipient: string, amount: string) => Promise<`0x${string}` | undefined>;
 
     setApproveFormValues: (values: { amount?: string; spenderAddress?: string }) => void;
     setApproveFormValidationErrors: (errors: { amount?: string; spenderAddress?: string }) => void;
     setApproveTransactionState: (state: TransactionState) => void;
-    approveToken: (token: 'DAI' | 'USDC', spender: string, amount: string) => Promise<void>;
+    approveToken: (token: 'DAI' | 'USDC', spender: string, amount: string) => Promise<`0x${string}` | undefined>;
 
     setMintAmount: (amount: string) => void;
-    mintToken: (token: 'DAI' | 'USDC', amount: string) => Promise<void>;
+    mintToken: (token: 'DAI' | 'USDC', amount: string) => Promise<`0x${string}` | undefined>;
     setMintFormValidationErrors: (errors: { amount?: string; recipientAddress?: string }) => void;
     setMintTransactionState: (state: TransactionState) => void;
   };
 }
 
-export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], TokenActionsSlice> = (set, get) => ({
+export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], TokenActionsSlice> = (set) => ({
   selectedToken: 'DAI',
   daiBalance: {
     balance: '',
@@ -330,17 +330,6 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
       }));
     },
     approveToken: async (token, spender, amount) => {
-      set((state) => ({
-        ...state,
-        transactionState: {
-          ...state.transactionState,
-          loading: true,
-          error: null,
-          success: false,
-          txHash: null,
-        },
-      }));
-
       try {
         const tokenConfig = TOKENS[token];
         const parsedAmount = parseUnits(amount, tokenConfig.decimals);
@@ -353,23 +342,10 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
           chainId: sepolia.id,
         });
 
-        set((state) => ({
-          transactionState: {
-            ...state.transactionState,
-            loading: false,
-            success: true,
-            txHash: result,
-          },
-        }));
+        return result;
       } catch (error) {
         console.error(`Error approving ${token}:`, error);
-        set((state) => ({
-          transactionState: {
-            ...state.transactionState,
-            loading: false,
-            error: `Failed to approve ${token}: ${(error as Error).message}`,
-          },
-        }));
+        return undefined;
       }
     },
 
@@ -395,18 +371,6 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
       }));
     },
     transferToken: async (token, recipient, amount) => {
-      set((state) => ({
-        ...state,
-        transactionState: {
-          ...state.transactionState,
-          loading: true,
-          error: null,
-          success: false,
-          txHash: null,
-        },
-      }));
-
-      debugger;
       try {
         const tokenConfig = TOKENS[token];
         const parsedAmount = parseUnits(amount, tokenConfig.decimals);
@@ -419,25 +383,10 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
           chainId: sepolia.id,
         });
 
-        set((state) => ({
-          ...state,
-          transactionState: {
-            ...state.transactionState,
-            loading: false,
-            success: true,
-            txHash: result,
-          },
-        }));
+        return result;
       } catch (error) {
         console.error(`Error transferring ${token}:`, error);
-        set((state) => ({
-          ...state,
-          transactionState: {
-            ...state.transactionState,
-            loading: false,
-            error: `Failed to transfer ${token}: ${(error as Error).message}`,
-          },
-        }));
+        return undefined;
       }
     },
 
@@ -463,17 +412,6 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
       }));
     },
     mintToken: async (token, amount) => {
-      set((state) => ({
-        ...state,
-        transactionState: {
-          ...state.transactionState,
-          loading: true,
-          error: null,
-          success: false,
-          txHash: null,
-        },
-      }));
-
       try {
         const tokenConfig = TOKENS[token];
         const parsedAmount = parseUnits(amount, tokenConfig.decimals);
@@ -487,36 +425,10 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
           chainId: sepolia.id,
         });
 
-        set((state) => ({
-          ...state,
-          transactionState: {
-            ...state.transactionState,
-            loading: false,
-            success: true,
-            txHash: result,
-          },
-        }));
-
-        // Refresh balances after successful mint
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const address = (window as any).ethereum?.selectedAddress;
-        if (address) {
-          // Use the get function to access the fetchTokenBalances method
-          await get().balanceActions.fetchTokenBalances(address);
-        }
+        return result;
       } catch (error) {
         console.error(`Error minting ${token}:`, error);
-        set((state) => ({
-          ...state,
-          mint: {
-            ...state.mint,
-            transactionState: {
-              ...state.mint.transactionState,
-              loading: false,
-              error: `Failed to mint ${token}: ${(error as Error).message}`,
-            },
-          },
-        }));
+        return undefined;
       }
     },
   },

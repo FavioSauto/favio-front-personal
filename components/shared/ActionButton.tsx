@@ -62,7 +62,6 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 
     let structuredData: ActionFormData;
 
-    debugger;
     // Structure the data based on the action type (label)
     switch (label.toLowerCase()) {
       case 'mint':

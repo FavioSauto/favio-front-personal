@@ -1,12 +1,16 @@
 'use client';
 import { ReactNode, createContext, useRef, useContext } from 'react';
-import { useStore as useZustandStore } from 'zustand';
+import { useStore as useZustandStore, StoreApi, UseBoundStore } from 'zustand';
 
 import { HistorySlice } from '@/stores/slices/historySlice';
 import { NetworkSlice } from '@/stores/slices/networkSlice';
 import { ProfileSlice } from '@/stores/slices/profileSlice';
 import { TokenActionsSlice } from '@/stores/slices/tokenActionsSlice';
 import { createStore } from '@/stores/store';
+import { createDaiStore, DaiState } from './daiStore';
+import { createUsdcStore, UsdcState } from './usdcStore';
+import { createEventsStore, EventsState } from './eventsStore';
+import { Address } from 'viem';
 
 type StoreType = ReturnType<typeof createStore>;
 
@@ -74,3 +78,6 @@ export const useEventsActions = () => useStore((state) => state.eventsActions);
 export const useNetwork = () => useStore((state) => state.network);
 export const useIsWrongNetwork = () => useStore((state) => state.isWrongNetwork);
 export const useNetworkActions = () => useStore((state) => state.networkActions);
+
+// Re-export event type for easier import in components
+export type { TokenEvent } from './eventsStore';
