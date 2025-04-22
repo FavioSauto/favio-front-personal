@@ -3,10 +3,14 @@
 import { useBalanceActions, useSelectedToken } from '@/providers/stores/storeProvider';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAccount } from 'wagmi';
 
 export default function SelectTokenSwitch() {
+  const { isConnected } = useAccount();
   const selectedToken = useSelectedToken();
   const { setSelectedToken } = useBalanceActions();
+
+  if (!isConnected) return null;
 
   return (
     <div className="flex items-center gap-2 rounded-full p-1 bg-gray-100 dark:bg-gray-700">
