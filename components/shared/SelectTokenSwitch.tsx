@@ -1,12 +1,12 @@
 'use client';
 
-import { useStore } from '@/providers/stores/storeProvider';
+import { useBalanceActions, useSelectedToken } from '@/providers/stores/storeProvider';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export default function SelectTokenSwitch() {
-  const selectedToken = useStore((state) => state.selectedToken);
-  const setSelectedToken = useStore((state) => state.balanceActions.setSelectedToken);
+  const selectedToken = useSelectedToken();
+  const { setSelectedToken } = useBalanceActions();
 
   return (
     <div className="flex items-center gap-2 rounded-full p-1 bg-gray-100 dark:bg-gray-700">

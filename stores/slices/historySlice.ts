@@ -21,7 +21,7 @@ const TOKENS = {
 
 export interface TokenEvent {
   token: 'DAI' | 'USDC';
-  type: 'Transfer' | 'Approval';
+  type: 'Transfer' | 'Approve' | 'Mint';
   amount: string;
   from: string;
   to: string;
@@ -131,7 +131,7 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
 
             events.push({
               token,
-              type: 'Approval',
+              type: 'Approve',
               amount: formatUnits(log.args.value, tokenConfig.decimals),
               from: log.args.owner,
               to: log.args.spender,

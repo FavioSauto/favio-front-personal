@@ -1,11 +1,12 @@
 'use client';
 import { useEffect, useState, useOptimistic, useTransition } from 'react';
-import { Wallet, Send, Plus, History } from 'lucide-react';
+import { Send, Plus, History } from 'lucide-react';
+import { ColumnDef, ColumnFiltersState } from '@tanstack/react-table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PageHeader } from '@/components/shared/PageHeader';
+import TokenCard from '@/components/shared/TokenCard';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { DataTable } from '@/components/shared/DataTable';
 import {
   ActionButton,
   MintFormData,
@@ -19,9 +20,9 @@ import {
   useBalanceActions,
   useEventsActions,
   useEvents,
-  useStore,
-  TokenEvent,
+  useSelectedToken,
 } from '@/providers/stores/storeProvider';
+import { TokenEvent } from '@/stores/slices/historySlice';
 import { useAccount } from 'wagmi';
 import { waitForTransactionReceipt } from '@wagmi/core';
 import { config } from '@/lib/config';
@@ -30,12 +31,14 @@ import { config } from '@/lib/config';
 type OptimisticBalanceAction = { type: 'mint'; amount: string } | { type: 'transfer'; amount: string };
 type TokenType = 'DAI' | 'USDC';
 type TableFilterType = TokenType | 'ALL';
+type ActionFilterType = 'Mint' | 'Transfer' | 'Approve' | 'ALL';
 
 // Define a more detailed type for optimistic events shown in the UI
 interface OptimisticEvent {
   id: string; // Unique ID for mapping and updates (can be txHash or temporary)
   type: 'Mint' | 'Transfer' | 'Approve';
   amount: string;
+  from?: `0x${string}`;
   status: 'Pending' | 'Success' | 'Failed'; // Include status
   tokenType: TokenType;
   recipient?: string; // For Transfer
@@ -57,8 +60,10 @@ const TokenDashboard = () => {
   const [isUsdcPending, setIsUsdcPending] = useState(false);
 
   // --- State for Token Selection and Table Filter ---
-  const selectedToken = useStore((state) => state.selectedToken);
-  const [tableFilter, setTableFilter] = useState<TableFilterType>('ALL');
+  const selectedToken = useSelectedToken();
+  const [tableFilter, setTableFilter] = useState<TableFilterType>(selectedToken);
+  const [actionFilter, setActionFilter] = useState<ActionFilterType>('ALL');
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   // ------------------------------------------------
 
   // Optimistic updates for USDC balance
@@ -98,6 +103,7 @@ const TokenDashboard = () => {
     type: event.type,
     amount: event.amount,
     status: 'Success',
+    from: event.from as `0x${string}`,
     tokenType: event.token === 'DAI' ? 'DAI' : 'USDC',
     recipient: event.to,
     spender: undefined,
@@ -129,7 +135,9 @@ const TokenDashboard = () => {
   );
 
   // --- Filtered Events for Table Display ---
-  const filteredEvents = optimisticEvents.filter((event) => tableFilter === 'ALL' || event.tokenType === tableFilter);
+  const eventsFilteredByToken = optimisticEvents.filter(
+    (event) => tableFilter === 'ALL' || event.tokenType === tableFilter
+  );
   // -----------------------------------------
 
   useEffect(() => {
@@ -140,6 +148,18 @@ const TokenDashboard = () => {
       });
     }
   }, [walletAddress, fetchTokenBalances, fetchEvents]);
+
+  useEffect(() => {
+    setTableFilter(selectedToken);
+  }, [selectedToken]);
+
+  useEffect(() => {
+    if (actionFilter === 'ALL') {
+      setColumnFilters((prev) => prev.filter((f) => f.id !== 'type'));
+    } else {
+      setColumnFilters((prev) => [...prev.filter((f) => f.id !== 'type'), { id: 'type', value: actionFilter }]);
+    }
+  }, [actionFilter]);
 
   // --- Action Handlers (Mint, Transfer, Approve) ---
   async function handleMint(data: MintFormData & { tokenType: TokenType }) {
@@ -161,6 +181,7 @@ const TokenDashboard = () => {
           id: txHash ?? tempId,
           type: 'Mint',
           amount: amount,
+          from: walletAddress,
           status: 'Pending',
           tokenType: tokenType,
           transactionHash: txHash,
@@ -178,6 +199,7 @@ const TokenDashboard = () => {
       startTransition(() => {
         const failureEvent: OptimisticEvent = {
           id: txHash ?? tempId,
+          from: walletAddress,
           type: 'Mint',
           amount: amount,
           tokenType: tokenType,
@@ -210,6 +232,7 @@ const TokenDashboard = () => {
         addOptimisticUpdate({ type: 'transfer', amount: amount });
         addOptimisticEvent({
           id: txHash ?? tempId,
+          from: walletAddress,
           type: 'Transfer',
           amount: amount,
           recipient: address,
@@ -230,6 +253,7 @@ const TokenDashboard = () => {
       startTransition(() => {
         const failureEvent: OptimisticEvent = {
           id: txHash ?? tempId,
+          from: walletAddress,
           type: 'Transfer',
           amount: amount,
           recipient: address,
@@ -258,6 +282,7 @@ const TokenDashboard = () => {
       startTransition(() => {
         addOptimisticEvent({
           id: txHash ?? tempId,
+          from: walletAddress,
           type: 'Approve',
           amount: allowance,
           spender: address,
@@ -277,6 +302,7 @@ const TokenDashboard = () => {
       startTransition(() => {
         const failureEvent: OptimisticEvent = {
           id: txHash ?? tempId,
+          from: walletAddress,
           type: 'Approve',
           amount: allowance,
           spender: address,
@@ -310,83 +336,98 @@ const TokenDashboard = () => {
     }
   };
 
-  // --- Helper component for the Token Card ---
-  const TokenCard = ({
-    tokenType,
-    balance,
-    isTokenPending,
-  }: {
-    tokenType: TokenType;
-    balance: number;
-    isTokenPending: boolean;
-  }) => {
-    const colors =
-      tokenType === 'USDC'
-        ? {
-            border: 'border-blue-500',
-            text: 'text-blue-700',
-            bg: 'bg-blue-50',
-            darkText: 'dark:text-blue-300',
-            darkBg: 'dark:bg-blue-900/20',
-            darkBorder: 'dark:border-blue-700',
-          }
-        : {
-            border: 'border-yellow-500',
-            text: 'text-yellow-700',
-            bg: 'bg-yellow-50',
-            darkText: 'dark:text-yellow-300',
-            darkBg: 'dark:bg-yellow-900/20',
-            darkBorder: 'dark:border-yellow-600',
-          };
+  // --- Column Definitions for DataTable ---
+  const columns: ColumnDef<OptimisticEvent>[] = [
+    {
+      accessorKey: 'type',
+      header: 'Type',
+      cell: ({ row }) => {
+        const event = row.original;
+        const displayType = event.type;
+        return (
+          <div
+            className={cn(
+              'font-medium text-gray-800 dark:text-gray-200',
+              event.status === 'Pending' && 'opacity-70 italic',
+              event.status === 'Failed' && 'opacity-80'
+            )}
+          >
+            {displayType}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'amount',
+      header: 'Amount',
+      cell: ({ row }) => {
+        const event = row.original;
+        return (
+          <div
+            className={cn(
+              'text-gray-700 dark:text-gray-300',
+              event.status === 'Pending' && 'opacity-70 italic',
+              event.status === 'Failed' && 'opacity-80'
+            )}
+          >
+            {event.amount}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => {
+        const event = row.original;
+        return (
+          <div
+            className={cn(
+              'text-sm font-medium',
+              event.status === 'Pending' && 'text-yellow-600 dark:text-yellow-400 opacity-70 italic',
+              event.status === 'Success' && 'text-green-600 dark:text-green-400',
+              event.status === 'Failed' && 'text-red-600 dark:text-red-400 line-through opacity-80'
+            )}
+          >
+            {event.status}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'tokenType',
+      header: 'Token',
+      cell: ({ row }) => {
+        const event = row.original;
+        return (
+          <span
+            className={cn(
+              'px-2 py-0.5 rounded-full text-xs font-medium',
+              event.tokenType === 'DAI'
+                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/30 dark:text-yellow-200'
+                : 'bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-200',
+              event.status === 'Pending' && 'opacity-70 italic',
+              event.status === 'Failed' && 'opacity-80'
+            )}
+          >
+            {event.tokenType}
+          </span>
+        );
+      },
+    },
+    // Add more columns if needed (e.g., From, To/Recipient, Spender, Transaction Hash)
+  ];
 
-    return (
-      <div className="relative w-full transition-all duration-300 ease-in-out">
-        <Card
-          className={cn(
-            `border-l-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200`,
-            colors.border,
-            colors.bg,
-            colors.darkBg,
-            colors.darkBorder
-          )}
-        >
-          <CardContent className="px-6 py-4 space-y-3">
-            <div className="flex justify-between items-center">
-              <h2 className={cn('text-xl font-semibold', colors.text, colors.darkText)}>{tokenType}</h2>
-              {/* Optional: Add small icon here */}
-            </div>
-            <div className="space-y-1">
-              <p className={cn('text-3xl font-bold tracking-tight flex items-center', colors.text, colors.darkText)}>
-                {balance.toFixed(tokenType === 'USDC' ? 2 : 4)} {/* Adjust decimals */}
-                {isTokenPending && (
-                  <span
-                    className={cn(
-                      'ml-2 w-2.5 h-2.5 rounded-full animate-pulse',
-                      tokenType === 'USDC' ? 'bg-blue-400' : 'bg-yellow-400'
-                    )}
-                  ></span>
-                )}
-              </p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {tokenType === 'DAI' ? '18 decimals' : '6 decimals'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
+  // --- No Results Message ---
+  const noResultsMessage = tableFilter === 'ALL' ? 'No transactions yet.' : `No ${tableFilter} transactions yet.`;
 
   return (
     // Main container with max-width and centering
-    <div className="w-full bg-accent">
-      {/* Header */}
-      <PageHeader title="Token Dashboard" icon={<Wallet className="w-6 h-6 text-gray-800 dark:text-gray-200" />} />
-
+    <div className="w-full py-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Container for Token Card and Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+      <div className="flex flex-col gap-y-4 col-span-1 items-start">
         {/* Token Card Display (Conditional) */}
-        <div className="flex justify-center md:justify-start min-h-[120px]">
+        <div className="flex justify-center w-full md:justify-start min-h-[120px]">
           {' '}
           {/* Adjusted alignment */}
           {selectedToken === 'DAI' && (
@@ -398,11 +439,13 @@ const TokenDashboard = () => {
         </div>
 
         {/* Quick Actions - Now operate on selectedToken */}
-        <Card className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800/30">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base font-semibold text-gray-700 dark:text-gray-300">Quick Actions</CardTitle>
+        <Card className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800/30 w-full gap-4">
+          <CardHeader className="flex items-center">
+            <CardTitle className="text-base h-full font-semibold text-gray-700 dark:text-gray-300">
+              Quick Actions
+            </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 gap-4">
+          <CardContent className="flex gap-x-2 w-full justify-between">
             {' '}
             {/* Changed to always be 1 column */}
             <ActionButton
@@ -411,120 +454,129 @@ const TokenDashboard = () => {
               label="Mint"
               disabled={isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
               // Add specific styling for action buttons if needed
-              className="rounded-md"
+              className="rounded-md w-1/3"
             />
             <ActionButton
               onFormSubmit={handleTransferAction}
               icon={<Send className="w-5 h-5 mr-2" />}
               label="Transfer"
               disabled={isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
-              className="rounded-md"
+              className="rounded-md w-1/3"
             />
             <ActionButton
               onFormSubmit={handleApproveAction}
               icon={<History className="w-5 h-5 mr-2" />}
               label="Approve"
               disabled={isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
-              className="rounded-md"
+              className="rounded-md w-1/3"
             />
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Transactions - Use filteredEvents */}
+      {/* Recent Transactions - Use eventsFilteredByToken */}
       <Card className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800/30 transition-all duration-300 hover:shadow-md">
-        <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
-          <CardTitle className="text-base font-medium text-gray-700 dark:text-gray-300">Recent Transactions</CardTitle>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant={tableFilter === 'ALL' ? 'secondary' : 'ghost'} // Use subtle variants
-              onClick={() => setTableFilter('ALL')}
-              className="rounded-md px-3"
-            >
-              All
-            </Button>
-            <Button
-              size="sm"
-              variant={tableFilter === 'DAI' ? 'secondary' : 'ghost'}
-              onClick={() => setTableFilter('DAI')}
-              className={cn(
-                'rounded-md px-3',
-                tableFilter === 'DAI' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/30 dark:text-yellow-200'
-              )}
-            >
-              DAI
-            </Button>
-            <Button
-              size="sm"
-              variant={tableFilter === 'USDC' ? 'secondary' : 'ghost'}
-              onClick={() => setTableFilter('USDC')}
-              className={cn(
-                'rounded-md px-3',
-                tableFilter === 'USDC' && 'bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-200'
-              )}
-            >
-              USDC
-            </Button>
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 gap-3 lg:flex-col lg:items-start lg:justify-start">
+          <CardTitle className="text-base font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap flex-shrink-0">
+            Recent Transactions
+          </CardTitle>
+          <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2 w-full">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium mr-1 flex-shrink-0">Token:</span>
+              <Button
+                size="sm"
+                variant={tableFilter === 'ALL' ? 'secondary' : 'ghost'}
+                onClick={() => setTableFilter('ALL')}
+                className={cn(
+                  'rounded-md px-3',
+                  tableFilter === 'ALL' && 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                )}
+              >
+                All
+              </Button>
+              <Button
+                size="sm"
+                variant={tableFilter === 'DAI' ? 'secondary' : 'ghost'}
+                onClick={() => setTableFilter('DAI')}
+                className={cn(
+                  'rounded-md px-3',
+                  tableFilter === 'DAI' && 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/30 dark:text-yellow-200'
+                )}
+              >
+                DAI
+              </Button>
+              <Button
+                size="sm"
+                variant={tableFilter === 'USDC' ? 'secondary' : 'ghost'}
+                onClick={() => setTableFilter('USDC')}
+                className={cn(
+                  'rounded-md px-3',
+                  tableFilter === 'USDC' && 'bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-200'
+                )}
+              >
+                USDC
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-medium mr-1 flex-shrink-0">Action:</span>
+              <Button
+                size="sm"
+                variant={actionFilter === 'ALL' ? 'secondary' : 'ghost'}
+                onClick={() => setActionFilter('ALL')}
+                className={cn(
+                  'rounded-md px-3',
+                  actionFilter === 'ALL' && 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                )}
+              >
+                All
+              </Button>
+              <Button
+                size="sm"
+                variant={actionFilter === 'Mint' ? 'secondary' : 'ghost'}
+                onClick={() => setActionFilter('Mint')}
+                className={cn(
+                  'rounded-md px-3',
+                  actionFilter === 'Mint' && 'bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-200'
+                )}
+              >
+                Mint
+              </Button>
+              <Button
+                size="sm"
+                variant={actionFilter === 'Transfer' ? 'secondary' : 'ghost'}
+                onClick={() => setActionFilter('Transfer')}
+                className={cn(
+                  'rounded-md px-3',
+                  actionFilter === 'Transfer' &&
+                    'bg-purple-100 text-purple-800 dark:bg-purple-800/30 dark:text-purple-200'
+                )}
+              >
+                Transfer
+              </Button>
+              <Button
+                size="sm"
+                variant={actionFilter === 'Approve' ? 'secondary' : 'ghost'}
+                onClick={() => setActionFilter('Approve')}
+                className={cn(
+                  'rounded-md px-3',
+                  actionFilter === 'Approve' &&
+                    'bg-indigo-100 text-indigo-800 dark:bg-indigo-800/30 dark:text-indigo-200'
+                )}
+              >
+                Approve
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          {' '}
-          {/* Remove default padding top */}
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b-gray-200 dark:border-b-gray-700">
-                <TableHead className="text-xs text-gray-500 uppercase dark:text-gray-400">Type</TableHead>
-                <TableHead className="text-xs text-gray-500 uppercase dark:text-gray-400">Amount</TableHead>
-                <TableHead className="text-xs text-gray-500 uppercase dark:text-gray-400">Status</TableHead>
-                <TableHead className="text-xs text-gray-500 uppercase dark:text-gray-400">Token</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredEvents.length === 0 && (
-                <TableRow className="border-0">
-                  <TableCell colSpan={4} className="py-8 text-center text-gray-500 dark:text-gray-400">
-                    {tableFilter === 'ALL' ? 'No transactions yet.' : `No ${tableFilter} transactions yet.`}
-                  </TableCell>
-                </TableRow>
-              )}
-              {filteredEvents.map((event) => (
-                <TableRow
-                  key={event.id}
-                  className={cn(
-                    'transition-colors duration-150 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700/50 last:border-b-0',
-                    event.status === 'Pending' && 'opacity-70 italic', // More subtle pending
-                    event.status === 'Failed' && 'bg-red-50/50 dark:bg-red-900/20 opacity-80' // Subtle failed bg
-                  )}
-                >
-                  <TableCell className="font-medium text-gray-800 dark:text-gray-200 py-3">{event.type}</TableCell>
-                  <TableCell className="text-gray-700 dark:text-gray-300 py-3">{event.amount}</TableCell>
-                  <TableCell
-                    className={cn(
-                      'py-3 text-sm font-medium', // Base style
-                      event.status === 'Pending' && 'text-yellow-600 dark:text-yellow-400',
-                      event.status === 'Success' && 'text-green-600 dark:text-green-400',
-                      event.status === 'Failed' && 'text-red-600 dark:text-red-400 line-through' // Added line-through
-                    )}
-                  >
-                    {event.status}
-                  </TableCell>
-                  <TableCell className="py-3">
-                    <span
-                      className={cn(
-                        'px-2 py-0.5 rounded-full text-xs font-medium',
-                        event.tokenType === 'DAI'
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/30 dark:text-yellow-200'
-                          : 'bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-200'
-                      )}
-                    >
-                      {event.tokenType}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={eventsFilteredByToken}
+            noResultsMessage={noResultsMessage}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={setColumnFilters}
+          />
         </CardContent>
       </Card>
     </div>
