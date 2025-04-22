@@ -44,7 +44,7 @@ const BottomNav: React.FC<BottomNavProps> = () => {
 
 const TokenDashboard = () => {
   return (
-    <div className="relative w-[380px] h-[820px] bg-gray-50 overflow-hidden">
+    <div className="relative w-[380px] h-[820px]overflow-hidden">
       <div className="h-full pb-16 p-6 flex flex-col gap-6 overflow-y-auto">
         {/* Header */}
         <div className="flex justify-between items-center">

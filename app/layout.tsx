@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 
 import Providers from '@/providers/globalProvider';
 import { BottomNav } from '@/components/shared/BottomNav';
+import WalletConnectionGuard from '@/components/auth/WalletConnectionGuard';
 
 import '@rainbow-me/rainbowkit/styles.css';
 import './globals.css';
@@ -27,9 +28,9 @@ export default async function RootLayout({
       <body className="relative">
         <Providers cookie={cookie}>
           <Header />
-          <main className="relative bg-gray-50 overflow-hidden">
+          <main className="relative overflow-hidden">
             <div className="h-full pb-20 flex flex-col gap-6 overflow-y-auto lg:max-w-[1024px] lg:mx-auto">
-              {children}
+              <WalletConnectionGuard>{children}</WalletConnectionGuard>
             </div>
             <div className="fixed bottom-0 left-0 right-0 z-50">
               <BottomNav />
