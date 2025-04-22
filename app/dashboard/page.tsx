@@ -141,13 +141,17 @@ const TokenDashboard = () => {
   // -----------------------------------------
 
   useEffect(() => {
-    if (walletAddress) {
+    // Fetch only if wallet is connected AND events/balances might be missing
+    // Note: You might refine the balance check if needed, e.g., check specific balances
+    if (walletAddress && events.length === 0 /* || check if balances are zero/unset */) {
+      console.log('[DashboardPage] Fetching initial data...'); // Optional log
       startTransition(() => {
         fetchTokenBalances(walletAddress);
         fetchEvents(walletAddress);
       });
     }
-  }, [walletAddress, fetchTokenBalances, fetchEvents]);
+    // Dependencies include events.length to re-evaluate if events get cleared elsewhere
+  }, [walletAddress, fetchTokenBalances, fetchEvents, events.length]);
 
   useEffect(() => {
     setTableFilter(selectedToken);
