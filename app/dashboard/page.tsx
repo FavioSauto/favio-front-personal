@@ -21,11 +21,13 @@ import {
   useEventsActions,
   useEvents,
   useSelectedToken,
+  useIsWrongNetwork,
 } from '@/providers/stores/storeProvider';
 import { TokenEvent } from '@/stores/slices/historySlice';
 import { useAccount } from 'wagmi';
-import { waitForTransactionReceipt } from '@wagmi/core';
+import { waitForTransactionReceipt, switchNetwork as switchNetworkCore } from '@wagmi/core';
 import { config } from '@/lib/config';
+import { sepolia } from 'wagmi/chains';
 
 // Define types for optimistic update actions
 type OptimisticBalanceAction = { type: 'mint'; amount: string } | { type: 'transfer'; amount: string };
@@ -55,6 +57,7 @@ const TokenDashboard = () => {
   const { mintToken, transferToken, approveToken } = useBalanceActions();
   const { fetchTokenBalances } = useBalanceActions();
   const [isPending, startTransition] = useTransition();
+  const isWrongNetwork = useIsWrongNetwork();
 
   const [isDaiPending, setIsDaiPending] = useState(false);
   const [isUsdcPending, setIsUsdcPending] = useState(false);
@@ -138,6 +141,8 @@ const TokenDashboard = () => {
   const eventsFilteredByToken = optimisticEvents.filter(
     (event) => tableFilter === 'ALL' || event.tokenType === tableFilter
   );
+  // Use empty array if network is wrong
+  const displayEvents = isWrongNetwork ? [] : eventsFilteredByToken;
   // -----------------------------------------
 
   useEffect(() => {
@@ -166,6 +171,15 @@ const TokenDashboard = () => {
   }, [actionFilter]);
 
   // --- Action Handlers (Mint, Transfer, Approve) ---
+  const handleSwitchNetwork = async () => {
+    try {
+      await switchNetworkCore(config, { chainId: sepolia.id });
+    } catch (error) {
+      console.error('Failed to switch network:', error);
+      // Handle error (e.g., show a toast notification)
+    }
+  };
+
   async function handleMint(data: MintFormData & { tokenType: TokenType }) {
     const { amount, tokenType } = data;
     const setPending = tokenType === 'DAI' ? setIsDaiPending : setIsUsdcPending;
@@ -430,15 +444,39 @@ const TokenDashboard = () => {
     <div className="w-full py-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Container for Token Card and Quick Actions */}
       <div className="flex flex-col gap-y-4 col-span-1 items-start">
+        {/* Wrong Network Warning */}
+        {isWrongNetwork && (
+          <Card className="w-full bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700">
+            <CardContent className="p-4 text-center text-red-700 dark:text-red-300 font-medium flex flex-col items-center gap-2">
+              <span>You are connected to the wrong network. Please switch to Sepolia to perform actions.</span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleSwitchNetwork}
+                className="mt-2 bg-red-600 hover:bg-red-700 text-white"
+              >
+                Switch to Sepolia
+              </Button>
+            </CardContent>
+          </Card>
+        )}
         {/* Token Card Display (Conditional) */}
         <div className="flex justify-center w-full md:justify-start min-h-[120px]">
           {' '}
           {/* Adjusted alignment */}
           {selectedToken === 'DAI' && (
-            <TokenCard tokenType="DAI" balance={optimisticDaiBalance.balance} isTokenPending={isDaiPending} />
+            <TokenCard
+              tokenType="DAI"
+              balance={isWrongNetwork ? 0 : optimisticDaiBalance.balance}
+              isTokenPending={isDaiPending}
+            />
           )}
           {selectedToken === 'USDC' && (
-            <TokenCard tokenType="USDC" balance={optimisticUsdcBalance.balance} isTokenPending={isUsdcPending} />
+            <TokenCard
+              tokenType="USDC"
+              balance={isWrongNetwork ? 0 : optimisticUsdcBalance.balance}
+              isTokenPending={isUsdcPending}
+            />
           )}
         </div>
 
@@ -456,7 +494,7 @@ const TokenDashboard = () => {
               onFormSubmit={handleMintAction}
               icon={<Plus className="w-5 h-5 mr-2" />} // Smaller icon, added margin
               label="Mint"
-              disabled={isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
+              disabled={isWrongNetwork || isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
               // Add specific styling for action buttons if needed
               className="rounded-md w-1/3"
             />
@@ -464,14 +502,14 @@ const TokenDashboard = () => {
               onFormSubmit={handleTransferAction}
               icon={<Send className="w-5 h-5 mr-2" />}
               label="Transfer"
-              disabled={isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
+              disabled={isWrongNetwork || isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
               className="rounded-md w-1/3"
             />
             <ActionButton
               onFormSubmit={handleApproveAction}
               icon={<History className="w-5 h-5 mr-2" />}
               label="Approve"
-              disabled={isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
+              disabled={isWrongNetwork || isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
               className="rounded-md w-1/3"
             />
           </CardContent>
@@ -576,7 +614,7 @@ const TokenDashboard = () => {
         <CardContent className="pt-0">
           <DataTable
             columns={columns}
-            data={eventsFilteredByToken}
+            data={displayEvents}
             noResultsMessage={noResultsMessage}
             columnFilters={columnFilters}
             onColumnFiltersChange={setColumnFilters}
