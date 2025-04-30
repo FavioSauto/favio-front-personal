@@ -24,13 +24,11 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <head>
-        <script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" />{' '}
-      </head>
+      <head>{/* <script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" /> */}</head>
       <body className="relative">
         <Providers cookie={cookie}>
           <Header />
-          <main className="relative overflow-hidden">
+          <main className="relativ overflow-hidden">
             <div className="h-full pb-20 flex flex-col gap-6 overflow-y-auto lg:max-w-[1024px] lg:mx-auto">
               <WalletConnectionGuard>{children}</WalletConnectionGuard>
             </div>
