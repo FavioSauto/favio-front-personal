@@ -1,4 +1,4 @@
-import ConnectButton from './reusable/connect-button';
+import ConnectButton from './shared/ConnectButton';
 import SelectTokenSwitch from './shared/SelectTokenSwitch';
 
 export default function Header() {
