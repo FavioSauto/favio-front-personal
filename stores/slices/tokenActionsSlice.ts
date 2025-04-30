@@ -4,6 +4,11 @@ import { sepolia } from 'wagmi/chains';
 import { StateCreator } from 'zustand';
 
 import { config } from '@/lib/config';
+// Import other slice types to allow get() access
+import { ErrorSlice } from './errorSlice';
+import { HistorySlice } from './historySlice';
+import { NetworkSlice } from './networkSlice';
+import { ProfileSlice } from './profileSlice';
 
 // ERC20 ABI minimal interface
 const ERC20_ABI = [
@@ -144,7 +149,11 @@ export interface TokenActionsSlice {
   };
 }
 
-export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], TokenActionsSlice> = (set) => ({
+// Define the combined state type for use with get()
+// Ensure all your actual slice types are included here
+type AppState = TokenActionsSlice & ErrorSlice & HistorySlice & NetworkSlice & ProfileSlice;
+
+export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenActionsSlice> = (set, get) => ({
   selectedToken: 'DAI',
   daiBalance: {
     balance: '',
@@ -232,14 +241,12 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
         return;
       }
 
-      // Set loading state
       set((state) => ({
         daiBalance: { ...state.daiBalance, loading: true, error: null },
         usdcBalance: { ...state.usdcBalance, loading: true, error: null },
       }));
 
       try {
-        // Fetch DAI balance
         const daiBalanceResult = await readContract(config, {
           address: TOKENS.DAI.address as `0x${string}`,
           abi: ERC20_ABI,
@@ -248,7 +255,6 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
           chainId: sepolia.id,
         });
 
-        // Fetch USDC balance
         const usdcBalanceResult = await readContract(config, {
           address: TOKENS.USDC.address as `0x${string}`,
           abi: ERC20_ABI,
@@ -257,7 +263,6 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
           chainId: sepolia.id,
         });
 
-        // Format balances with correct decimals
         const formattedDaiBalance = formatUnits(daiBalanceResult as bigint, TOKENS.DAI.decimals);
         const formattedUsdcBalance = formatUnits(usdcBalanceResult as bigint, TOKENS.USDC.decimals);
 
@@ -275,19 +280,24 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
             error: null,
           },
         });
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error fetching token balances:', error);
+        let errorMessage = 'Unknown error fetching balances';
+        if (error instanceof Error) {
+          errorMessage = `Failed to fetch token balances: ${error.message}`;
+        } else if (typeof error === 'string') {
+          errorMessage = `Failed to fetch token balances: ${error}`;
+        } else if (typeof error === 'object' && error !== null) {
+          if ('shortMessage' in error && typeof error.shortMessage === 'string') {
+            errorMessage = `Failed to fetch token balances: ${error.shortMessage}`;
+          } else if ('message' in error && typeof error.message === 'string') {
+            errorMessage = `Failed to fetch token balances: ${error.message}`;
+          }
+        }
+        get().errorActions.setError(errorMessage);
         set((state) => ({
-          daiBalance: {
-            ...state.daiBalance,
-            loading: false,
-            error: 'Failed to fetch DAI balance',
-          },
-          usdcBalance: {
-            ...state.usdcBalance,
-            loading: false,
-            error: 'Failed to fetch USDC balance',
-          },
+          daiBalance: { ...state.daiBalance, loading: false, error: 'Failed' },
+          usdcBalance: { ...state.usdcBalance, loading: false, error: 'Failed' },
         }));
       }
     },
@@ -308,6 +318,7 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
       });
     },
 
+    // --- Approve Actions ---
     setApproveFormValues: (values: { amount?: string; spenderAddress?: string }) => {
       set((state) => ({
         ...state,
@@ -324,10 +335,7 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
       }));
     },
     setApproveTransactionState: (transactionState: TransactionState) => {
-      set((state) => ({
-        ...state,
-        approve: { ...state.approve, transactionState },
-      }));
+      set((state) => ({ approve: { ...state.approve, transactionState } }));
     },
     approveToken: async (token, spender, amount) => {
       try {
@@ -343,12 +351,34 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
         });
 
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Error approving ${token}:`, error);
+        let message = `Failed to approve ${token}. Please try again.`;
+        let userRejected = false;
+
+        if (error instanceof Error) {
+          message = error.message;
+          userRejected = message.includes('rejected');
+        } else if (typeof error === 'object' && error !== null) {
+          let potentialMsg = '';
+          if ('shortMessage' in error && typeof error.shortMessage === 'string') {
+            potentialMsg = error.shortMessage;
+          } else if ('message' in error && typeof error.message === 'string') {
+            potentialMsg = error.message;
+          }
+          if (potentialMsg) {
+            message = potentialMsg;
+            userRejected = message.includes('rejected');
+          }
+        }
+
+        const finalMessage = userRejected ? 'Approve transaction was rejected.' : message;
+        get().errorActions.setError(finalMessage);
         return undefined;
       }
     },
 
+    // --- Transfer Actions ---
     setTransferFormValidationErrors: (errors: { amount?: string; recipientAddress?: string }) => {
       set((state) => ({
         ...state,
@@ -365,10 +395,7 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
       }));
     },
     setTransferTransactionState: (transactionState: TransactionState) => {
-      set((state) => ({
-        ...state,
-        transfer: { ...state.transfer, transactionState },
-      }));
+      set((state) => ({ transfer: { ...state.transfer, transactionState } }));
     },
     transferToken: async (token, recipient, amount) => {
       try {
@@ -384,19 +411,40 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
         });
 
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Error transferring ${token}:`, error);
+        let message = `Failed to transfer ${token}. Please check details and balance.`;
+        let userRejected = false;
+
+        if (error instanceof Error) {
+          message = error.message;
+          userRejected = message.includes('rejected');
+        } else if (typeof error === 'object' && error !== null) {
+          let potentialMsg = '';
+          if ('shortMessage' in error && typeof error.shortMessage === 'string') {
+            potentialMsg = error.shortMessage;
+          } else if ('message' in error && typeof error.message === 'string') {
+            potentialMsg = error.message;
+          }
+          if (potentialMsg) {
+            message = potentialMsg;
+            userRejected = message.includes('rejected');
+          }
+        }
+
+        const finalMessage = userRejected ? 'Transfer transaction was rejected.' : message;
+        get().errorActions.setError(finalMessage);
         return undefined;
       }
     },
 
+    // --- Mint Actions ---
     setMintAmount: (amount: string) => {
       set((state) => ({
-        ...state,
         mint: { ...state.mint, form: { ...state.mint.form, amount } },
       }));
     },
-    setMintFormValidationErrors: (errors: { amount?: string; recipientAddress?: string }) => {
+    setMintFormValidationErrors: (errors: { amount?: string }) => {
       set((state) => ({
         ...state,
         mint: {
@@ -406,12 +454,17 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
       }));
     },
     setMintTransactionState: (transactionState: TransactionState) => {
-      set((state) => ({
-        ...state,
-        mint: { ...state.mint, transactionState },
-      }));
+      set((state) => ({ mint: { ...state.mint, transactionState } }));
     },
     mintToken: async (token, amount) => {
+      const walletAddress = get().details?.address;
+      if (!walletAddress) {
+        const message = 'Wallet address not found. Please connect your wallet.';
+        console.error(message);
+        get().errorActions.setError(message);
+        return undefined;
+      }
+
       try {
         const tokenConfig = TOKENS[token];
         const parsedAmount = parseUnits(amount, tokenConfig.decimals);
@@ -420,14 +473,34 @@ export const createTokenActionsSlice: StateCreator<TokenActionsSlice, [], [], To
           address: tokenConfig.address as `0x${string}`,
           abi: ERC20_ABI,
           functionName: 'mint',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          args: [(window as any).ethereum?.selectedAddress as `0x${string}`, parsedAmount],
+          args: [walletAddress, parsedAmount],
           chainId: sepolia.id,
         });
 
         return result;
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`Error minting ${token}:`, error);
+        let message = `Failed to mint ${token}. Please try again.`;
+        let userRejected = false;
+
+        if (error instanceof Error) {
+          message = error.message;
+          userRejected = message.includes('rejected');
+        } else if (typeof error === 'object' && error !== null) {
+          let potentialMsg = '';
+          if ('shortMessage' in error && typeof error.shortMessage === 'string') {
+            potentialMsg = error.shortMessage;
+          } else if ('message' in error && typeof error.message === 'string') {
+            potentialMsg = error.message;
+          }
+          if (potentialMsg) {
+            message = potentialMsg;
+            userRejected = message.includes('rejected');
+          }
+        }
+
+        const finalMessage = userRejected ? 'Mint transaction was rejected.' : message;
+        get().errorActions.setError(finalMessage);
         return undefined;
       }
     },

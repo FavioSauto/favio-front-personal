@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import Providers from '@/providers/globalProvider';
 import { BottomNav } from '@/components/shared/BottomNav';
 import WalletConnectionGuard from '@/components/auth/WalletConnectionGuard';
+import ErrorModal from '@/components/shared/ErrorModal';
 
 import '@rainbow-me/rainbowkit/styles.css';
 import './globals.css';
@@ -36,6 +37,8 @@ export default async function RootLayout({
               <BottomNav />
             </div>
           </main>
+
+          <ErrorModal />
         </Providers>
       </body>
     </html>

@@ -6,6 +6,7 @@ import { HistorySlice } from '@/stores/slices/historySlice';
 import { NetworkSlice } from '@/stores/slices/networkSlice';
 import { ProfileSlice } from '@/stores/slices/profileSlice';
 import { TokenActionsSlice } from '@/stores/slices/tokenActionsSlice';
+import { ErrorSlice } from '@/stores/slices/errorSlice';
 import { createStore } from '@/stores/store';
 
 type StoreType = ReturnType<typeof createStore>;
@@ -22,7 +23,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   return <StoreContext.Provider value={storeRef.current}>{children}</StoreContext.Provider>;
 }
 
-export function useStore<T>(selector: (state: ProfileSlice & TokenActionsSlice & HistorySlice & NetworkSlice) => T): T {
+export function useStore<T>(
+  selector: (state: ProfileSlice & TokenActionsSlice & HistorySlice & NetworkSlice & ErrorSlice) => T
+): T {
   const store = useContext(StoreContext);
   if (!store) throw new Error('Missing StoreProvider');
 
@@ -75,3 +78,10 @@ export const useEventsActions = () => useStore((state) => state.eventsActions);
 export const useNetwork = () => useStore((state) => state.network);
 export const useIsWrongNetwork = () => useStore((state) => state.isWrongNetwork);
 export const useNetworkActions = () => useStore((state) => state.networkActions);
+
+/*//////////////////////////////////////////////////////////////
+                          ERROR STORE SLICE
+//////////////////////////////////////////////////////////////*/
+export const useIsErrorModalOpen = () => useStore((state) => state.isErrorModalOpen);
+export const useErrorMessage = () => useStore((state) => state.error);
+export const useErrorActions = () => useStore((state) => state.errorActions);
