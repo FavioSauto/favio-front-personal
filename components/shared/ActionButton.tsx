@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
 export interface MintFormData {
   amount: string;
 }
@@ -198,7 +197,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{label} Action</DialogTitle>
+          <DialogTitle>{label}</DialogTitle>
           <DialogDescription>{`Enter the details below to ${label.toLowerCase()} tokens.`}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

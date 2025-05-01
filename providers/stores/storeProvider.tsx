@@ -48,6 +48,7 @@ export const useSelectedTokenInfo = () =>
   useStore((state) => (state.selectedToken === 'DAI' ? state.daiBalance : state.usdcBalance));
 export const useBalanceActions = () => useStore((state) => state.balanceActions);
 export const useTransactionState = () => useStore((state) => state.transactionState);
+export const useProfileActions = () => useStore((state) => state.detailsActions);
 
 export const useDaiBalances = () => useStore((state) => state.daiBalance);
 export const useUsdcBalances = () => useStore((state) => state.usdcBalance);

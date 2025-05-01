@@ -22,6 +22,7 @@ import {
   useEvents,
   useSelectedToken,
   useIsWrongNetwork,
+  useProfileActions,
 } from '@/providers/stores/storeProvider';
 import { TokenEvent } from '@/stores/slices/historySlice';
 import { useAccount } from 'wagmi';
@@ -56,6 +57,7 @@ const TokenDashboard = () => {
   const { fetchEvents } = useEventsActions();
   const { mintToken, transferToken, approveToken } = useBalanceActions();
   const { fetchTokenBalances } = useBalanceActions();
+  const { fetchProfile } = useProfileActions();
   const [isPending, startTransition] = useTransition();
   const isWrongNetwork = useIsWrongNetwork();
 
@@ -146,17 +148,18 @@ const TokenDashboard = () => {
   // -----------------------------------------
 
   useEffect(() => {
-    // Fetch only if wallet is connected AND events/balances might be missing
-    // Note: You might refine the balance check if needed, e.g., check specific balances
-    if (walletAddress && events.length === 0 /* || check if balances are zero/unset */) {
-      console.log('[DashboardPage] Fetching initial data...'); // Optional log
-      startTransition(() => {
-        fetchTokenBalances(walletAddress);
-        fetchEvents(walletAddress);
-      });
+    if (walletAddress) {
+      fetchTokenBalances(walletAddress);
+      fetchEvents(walletAddress);
+    } else {
+      fetchTokenBalances(undefined);
+      fetchEvents(undefined);
     }
-    // Dependencies include events.length to re-evaluate if events get cleared elsewhere
-  }, [walletAddress, fetchTokenBalances, fetchEvents, events.length]);
+  }, [walletAddress, fetchTokenBalances, fetchEvents]);
+
+  useEffect(() => {
+    fetchProfile(walletAddress);
+  }, [walletAddress, fetchProfile]);
 
   useEffect(() => {
     setTableFilter(selectedToken);

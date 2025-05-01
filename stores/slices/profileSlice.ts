@@ -3,7 +3,6 @@ import { getPublicClient } from 'wagmi/actions';
 import { StateCreator } from 'zustand';
 
 import { config } from '@/lib/config';
-import { middleEllipsis } from '@/lib/utils';
 
 export interface ProfileSlice {
   details: { address: string; chain: string; balance: string; ensName: string };
@@ -39,7 +38,7 @@ export const createProfileSlice: StateCreator<ProfileSlice, [], [], ProfileSlice
 
         set({
           details: {
-            address: middleEllipsis(walletAddress as string, 4) || walletAddress,
+            address: walletAddress,
             chain: config.chains[0].name,
             balance: `${Number(formatUnits(balance, 18)).toFixed(4)} ${config.chains[0].nativeCurrency.symbol}`,
             ensName: ensName || '',
