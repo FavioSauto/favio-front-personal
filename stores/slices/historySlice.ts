@@ -105,9 +105,11 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
               continue;
             }
 
+            const eventType = log.args.from === '0x0000000000000000000000000000000000000000' ? 'Mint' : 'Transfer';
+
             events.push({
               token,
-              type: 'Transfer',
+              type: eventType,
               amount: formatUnits(log.args.value, tokenConfig.decimals),
               from: log.args.from,
               to: log.args.to,
