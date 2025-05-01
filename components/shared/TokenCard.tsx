@@ -31,6 +31,7 @@ export default function TokenCard({
           darkBorder: 'dark:border-yellow-600',
         };
 
+  console.log('tokenType', tokenType, balance);
   return (
     <div className="relative w-full transition-all duration-300 ease-in-out">
       <Card
@@ -49,7 +50,7 @@ export default function TokenCard({
           </div>
           <div className="space-y-1">
             <p className={cn('text-3xl font-bold tracking-tight flex items-center', colors.text, colors.darkText)}>
-              {balance.toFixed(tokenType === 'USDC' ? 2 : 4)} {/* Adjust decimals */}
+              {balance.toFixed(2)} {/* Adjust decimals */}
               {isTokenPending && (
                 <span
                   className={cn(
@@ -59,8 +60,8 @@ export default function TokenCard({
                 ></span>
               )}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {tokenType === 'DAI' ? '18 decimals' : '6 decimals'}
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {balance.toFixed(tokenType === 'USDC' ? 6 : 18)} {/* Adjust decimals */}
             </p>
           </div>
         </CardContent>

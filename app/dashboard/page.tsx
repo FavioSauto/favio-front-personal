@@ -498,6 +498,7 @@ const TokenDashboard = () => {
               icon={<Plus className="w-5 h-5 mr-2" />} // Smaller icon, added margin
               label="Mint"
               disabled={isWrongNetwork || isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
+              tokenDecimals={selectedToken === 'DAI' ? 18 : 6}
               // Add specific styling for action buttons if needed
               className="rounded-md w-1/3"
             />
@@ -506,6 +507,7 @@ const TokenDashboard = () => {
               icon={<Send className="w-5 h-5 mr-2" />}
               label="Transfer"
               disabled={isWrongNetwork || isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
+              tokenDecimals={selectedToken === 'DAI' ? 18 : 6}
               className="rounded-md w-1/3"
             />
             <ActionButton
@@ -513,6 +515,7 @@ const TokenDashboard = () => {
               icon={<History className="w-5 h-5 mr-2" />}
               label="Approve"
               disabled={isWrongNetwork || isPending || (selectedToken === 'DAI' ? isDaiPending : isUsdcPending)}
+              tokenDecimals={selectedToken === 'DAI' ? 18 : 6}
               className="rounded-md w-1/3"
             />
           </CardContent>
