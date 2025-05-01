@@ -2,12 +2,9 @@
 import { ReactNode, createContext, useRef, useContext } from 'react';
 import { useStore as useZustandStore } from 'zustand';
 
-import { HistorySlice } from '@/stores/slices/historySlice';
-import { NetworkSlice } from '@/stores/slices/networkSlice';
-import { ProfileSlice } from '@/stores/slices/profileSlice';
-import { TokenActionsSlice } from '@/stores/slices/tokenActionsSlice';
-import { ErrorSlice } from '@/stores/slices/errorSlice';
 import { createStore } from '@/stores/store';
+
+import type { AppState } from '@/types/global';
 
 type StoreType = ReturnType<typeof createStore>;
 
@@ -23,9 +20,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   return <StoreContext.Provider value={storeRef.current}>{children}</StoreContext.Provider>;
 }
 
-export function useStore<T>(
-  selector: (state: ProfileSlice & TokenActionsSlice & HistorySlice & NetworkSlice & ErrorSlice) => T
-): T {
+export function useStore<T>(selector: (state: AppState) => T): T {
   const store = useContext(StoreContext);
   if (!store) throw new Error('Missing StoreProvider');
 
@@ -53,10 +48,17 @@ export const useProfileActions = () => useStore((state) => state.detailsActions)
 export const useDaiBalances = () => useStore((state) => state.daiBalance);
 export const useUsdcBalances = () => useStore((state) => state.usdcBalance);
 
+/*//////////////////////////////////////////////////////////////
+                      MINT ACTIONS & STATE
+//////////////////////////////////////////////////////////////*/
 export const useMintFormValues = () => useStore((state) => state.mint.form);
 export const useMintFormValidationErrors = () => useStore((state) => state.mint.form.validationErrors);
 export const useMintTransactionState = () => useStore((state) => state.mint.transactionState);
+export const useMintActions = () => useStore((state) => state.mintActions);
 
+/*//////////////////////////////////////////////////////////////
+                    TRANSFER ACTIONS & STATE
+//////////////////////////////////////////////////////////////*/
 export const useTransferFormValues = () => useStore((state) => state.transfer.form);
 export const useTransferFormValidationErrors = () => useStore((state) => state.transfer.form.validationErrors);
 export const useTransferTransactionState = () => useStore((state) => state.transfer.transactionState);
