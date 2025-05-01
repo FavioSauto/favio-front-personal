@@ -353,23 +353,11 @@ export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenAction
         return result;
       } catch (error: unknown) {
         console.error(`Error approving ${token}:`, error);
-        let message = `Failed to approve ${token}. Please try again.`;
+        const message = `Failed to approve ${token}. Please try again.`;
         let userRejected = false;
 
         if (error instanceof Error) {
-          message = error.message;
           userRejected = message.includes('rejected');
-        } else if (typeof error === 'object' && error !== null) {
-          let potentialMsg = '';
-          if ('shortMessage' in error && typeof error.shortMessage === 'string') {
-            potentialMsg = error.shortMessage;
-          } else if ('message' in error && typeof error.message === 'string') {
-            potentialMsg = error.message;
-          }
-          if (potentialMsg) {
-            message = potentialMsg;
-            userRejected = message.includes('rejected');
-          }
         }
 
         const finalMessage = userRejected ? 'Approve transaction was rejected.' : message;
@@ -413,25 +401,12 @@ export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenAction
         return result;
       } catch (error: unknown) {
         console.error(`Error transferring ${token}:`, error);
-        let message = `Failed to transfer ${token}. Please check details and balance.`;
+        const message = `Failed to transfer ${token}. Please check details and balance.`;
         let userRejected = false;
 
         if (error instanceof Error) {
-          message = error.message;
           userRejected = message.includes('rejected');
-        } else if (typeof error === 'object' && error !== null) {
-          let potentialMsg = '';
-          if ('shortMessage' in error && typeof error.shortMessage === 'string') {
-            potentialMsg = error.shortMessage;
-          } else if ('message' in error && typeof error.message === 'string') {
-            potentialMsg = error.message;
-          }
-          if (potentialMsg) {
-            message = potentialMsg;
-            userRejected = message.includes('rejected');
-          }
         }
-
         const finalMessage = userRejected ? 'Transfer transaction was rejected.' : message;
         get().errorActions.setError(finalMessage);
         return undefined;
@@ -458,6 +433,7 @@ export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenAction
     },
     mintToken: async (token, amount) => {
       const walletAddress = get().details?.address;
+
       if (!walletAddress) {
         const message = 'Wallet address not found. Please connect your wallet.';
         console.error(message);
@@ -480,23 +456,11 @@ export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenAction
         return result;
       } catch (error: unknown) {
         console.error(`Error minting ${token}:`, error);
-        let message = `Failed to mint ${token}. Please try again.`;
+        const message = `Failed to mint ${token}. Please try again.`;
         let userRejected = false;
 
         if (error instanceof Error) {
-          message = error.message;
           userRejected = message.includes('rejected');
-        } else if (typeof error === 'object' && error !== null) {
-          let potentialMsg = '';
-          if ('shortMessage' in error && typeof error.shortMessage === 'string') {
-            potentialMsg = error.shortMessage;
-          } else if ('message' in error && typeof error.message === 'string') {
-            potentialMsg = error.message;
-          }
-          if (potentialMsg) {
-            message = potentialMsg;
-            userRejected = message.includes('rejected');
-          }
         }
 
         const finalMessage = userRejected ? 'Mint transaction was rejected.' : message;
