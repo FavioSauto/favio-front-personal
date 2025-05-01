@@ -23,6 +23,7 @@ import {
   useSelectedToken,
   useIsWrongNetwork,
   useProfileActions,
+  useEventsLoading,
 } from '@/providers/stores/storeProvider';
 import { TokenEvent } from '@/stores/slices/historySlice';
 import { useAccount } from 'wagmi';
@@ -60,6 +61,7 @@ const TokenDashboard = () => {
   const { fetchProfile } = useProfileActions();
   const [isPending, startTransition] = useTransition();
   const isWrongNetwork = useIsWrongNetwork();
+  const isLoadingEvents = useEventsLoading();
 
   const [isDaiPending, setIsDaiPending] = useState(false);
   const [isUsdcPending, setIsUsdcPending] = useState(false);
@@ -383,6 +385,9 @@ const TokenDashboard = () => {
       header: 'Amount',
       cell: ({ row }) => {
         const event = row.original;
+        const amount = Number(event.amount); // Ensure it's a number
+        const formattedAmount = isNaN(amount) ? event.amount : amount.toFixed(2); // Format or fallback
+
         return (
           <div
             className={cn(
@@ -391,7 +396,7 @@ const TokenDashboard = () => {
               event.status === 'Failed' && 'opacity-80'
             )}
           >
-            {event.amount}
+            {formattedAmount}
           </div>
         );
       },
@@ -624,6 +629,7 @@ const TokenDashboard = () => {
             noResultsMessage={noResultsMessage}
             columnFilters={columnFilters}
             onColumnFiltersChange={setColumnFilters}
+            isLoading={isLoadingEvents}
           />
         </CardContent>
       </Card>

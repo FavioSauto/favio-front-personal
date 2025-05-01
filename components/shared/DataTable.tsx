@@ -22,6 +22,7 @@ interface DataTableProps<TData, TValue> {
   noResultsMessage?: string | React.ReactNode;
   columnFilters?: ColumnFiltersState;
   onColumnFiltersChange?: React.Dispatch<React.SetStateAction<ColumnFiltersState>>;
+  isLoading?: boolean;
   // Add other potential props like filtering, sorting state etc. if needed
 }
 
@@ -31,6 +32,7 @@ export function DataTable<TData, TValue>({
   noResultsMessage = 'No results found.',
   columnFilters,
   onColumnFiltersChange,
+  isLoading,
 }: DataTableProps<TData, TValue>) {
   const [pagination, setPagination] = React.useState<PaginationState>({
     pageIndex: 0,
@@ -76,18 +78,27 @@ export function DataTable<TData, TValue>({
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center text-gray-500 dark:text-gray-400">
+                    Loading events...
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && 'selected'}
                     className="transition-colors duration-150 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700/50 last:border-b-0"
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-3 text-gray-700 dark:text-gray-300">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      console.log(cell);
+                      return (
+                        <TableCell key={cell.id} className="py-3 text-gray-700 dark:text-gray-300">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))
               ) : (
@@ -100,7 +111,7 @@ export function DataTable<TData, TValue>({
             </TableBody>
           </Table>
         </div>
-        {table.getPageCount() > 1 && (
+        {!isLoading && table.getPageCount() > 1 && (
           <div className="flex items-center justify-end space-x-2 py-3 px-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <span className="text-sm text-gray-700 dark:text-gray-300">
               Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}

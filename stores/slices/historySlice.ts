@@ -87,7 +87,7 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
               name: 'Approval',
               type: 'event',
             },
-            fromBlock: fromBlock - BigInt(100),
+            fromBlock: fromBlock - BigInt(99),
             toBlock: 'latest',
           });
 
