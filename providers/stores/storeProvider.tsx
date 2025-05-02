@@ -83,6 +83,8 @@ export const useEvents = () => useStore((state) => state.events);
 export const useOptimisticEvents = () => useStore((state) => state.optimisticEvents);
 export const useEventsLoading = () => useStore((state) => state.eventsIsLoading);
 export const useEventsError = () => useStore((state) => state.eventsErrorMessage);
+export const useEventsFetchError = () => useStore((state) => state.eventsFetchError);
+export const useIsRetryingEvents = () => useStore((state) => state.isRetryingEvents);
 export const useEventsActions = () => useStore((state) => state.eventsActions);
 
 /*//////////////////////////////////////////////////////////////

@@ -35,6 +35,8 @@ export interface HistorySlice {
   optimisticEvents: TokenEvent[];
   eventsIsLoading: boolean;
   eventsErrorMessage: string | null;
+  eventsFetchError: boolean;
+  isRetryingEvents: boolean;
   eventsActions: {
     fetchEvents: (walletAddress: string | undefined) => Promise<void>;
     resetOptimisticEvents: () => void;
@@ -42,24 +44,44 @@ export interface HistorySlice {
   };
 }
 
-export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice> = (set) => ({
+export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice> = (set, get) => ({
   events: [],
   optimisticEvents: [],
-  eventsIsLoading: false,
+  eventsIsLoading: true,
   eventsErrorMessage: null,
+  eventsFetchError: false,
+  isRetryingEvents: false,
   eventsActions: {
     fetchEvents: async (walletAddress) => {
       if (!walletAddress) {
-        set({ events: [], optimisticEvents: [], eventsIsLoading: false, eventsErrorMessage: null });
+        set({
+          events: [],
+          optimisticEvents: [],
+          eventsIsLoading: false,
+          eventsErrorMessage: null,
+          eventsFetchError: false,
+          isRetryingEvents: false,
+        });
         return;
       }
 
-      set({ eventsErrorMessage: null });
+      set({
+        eventsIsLoading: true,
+        eventsErrorMessage: null,
+        eventsFetchError: false,
+        isRetryingEvents: true,
+      });
 
       try {
         const events: TokenEvent[] = [];
         const publicClient = getPublicClient(config);
-        const fromBlock = await getBlockNumber(config);
+        let fromBlock: bigint;
+        try {
+          fromBlock = await getBlockNumber(config);
+        } catch (blockError) {
+          console.error('Error fetching block number:', blockError);
+          throw new Error('Failed to get current block number.');
+        }
 
         // Fetch events for each token
         for (const [tokenSymbol, tokenConfig] of Object.entries(TOKENS)) {
@@ -152,10 +174,26 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
           }
         }
 
-        set({ events, optimisticEvents: events, eventsIsLoading: false, eventsErrorMessage: null });
+        set({
+          events,
+          optimisticEvents: events,
+          eventsIsLoading: false,
+          eventsErrorMessage: null,
+          eventsFetchError: false,
+          isRetryingEvents: false,
+        });
       } catch (error) {
         console.error('Error fetching events:', error);
-        set({ events: [], optimisticEvents: [], eventsIsLoading: false, eventsErrorMessage: 'Failed to fetch events' });
+        set({
+          events: [],
+          optimisticEvents: get().events,
+          eventsIsLoading: false,
+          eventsErrorMessage: `Failed to fetch transaction history. ${
+            error instanceof Error ? error.message : 'Please try again.'
+          }`,
+          eventsFetchError: true,
+          isRetryingEvents: false,
+        });
       }
     },
     resetOptimisticEvents: () => {

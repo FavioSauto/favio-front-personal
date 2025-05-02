@@ -5,10 +5,14 @@ import { ColumnDef, ColumnFiltersState } from '@tanstack/react-table';
 
 import { cn } from '@/lib/utils';
 import {
+  useDetails,
   useEventsLoading,
+  useEventsFetchError,
   useIsWrongNetwork,
+  useIsRetryingEvents,
   useOptimisticEvents,
   useSelectedToken,
+  useEventsActions,
 } from '@/providers/stores/storeProvider';
 
 import { Button } from '@/components/ui/button';
@@ -33,10 +37,16 @@ type TableFilterType = 'ALL' | 'DAI' | 'USDC';
 type TokenType = 'DAI' | 'USDC';
 
 export default function TransactionHistoryTable() {
+  const { address: walletAddress } = useDetails();
+
   const optimisticEvents = useOptimisticEvents();
   const isLoadingEvents = useEventsLoading();
+  const isRetryingEvents = useIsRetryingEvents();
   const isWrongNetwork = useIsWrongNetwork();
+  const eventsFetchError = useEventsFetchError();
   const selectedToken = useSelectedToken();
+
+  const { fetchEvents } = useEventsActions();
 
   const [tableFilter, setTableFilter] = useState<TableFilterType>(selectedToken);
   const [actionFilter, setActionFilter] = useState<ActionFilterType>('ALL');
@@ -154,8 +164,6 @@ export default function TransactionHistoryTable() {
   // --- No Results Message ---
   const noResultsMessage = tableFilter === 'ALL' ? 'No transactions yet.' : `No ${tableFilter} transactions yet.`;
 
-  console.log({ displayEvents, optimisticEvents });
-
   return (
     <Card className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800/30 transition-all duration-300 hover:shadow-md">
       <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 gap-3 lg:flex-col lg:items-start lg:justify-start">
@@ -252,14 +260,23 @@ export default function TransactionHistoryTable() {
       </CardHeader>
 
       <CardContent className="pt-0">
-        <DataTable
-          columns={columns}
-          data={displayEvents}
-          noResultsMessage={noResultsMessage}
-          columnFilters={columnFilters}
-          onColumnFiltersChange={setColumnFilters}
-          isLoading={isLoadingEvents}
-        />
+        {eventsFetchError ? (
+          <div className="text-center py-8 px-4">
+            <p className="text-red-600 dark:text-red-400 mb-4">{'Failed to load transaction history.'}</p>
+            <Button onClick={() => fetchEvents(walletAddress)} disabled={isRetryingEvents} size="sm">
+              {isRetryingEvents ? 'Retrying...' : 'Retry'}
+            </Button>
+          </div>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={displayEvents}
+            noResultsMessage={noResultsMessage}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={setColumnFilters}
+            isLoading={isLoadingEvents}
+          />
+        )}
       </CardContent>
     </Card>
   );
