@@ -20,35 +20,41 @@ const TOKENS = {
 };
 
 export interface TokenEvent {
-  token: 'DAI' | 'USDC';
-  type: 'Transfer' | 'Approve' | 'Mint';
   amount: string;
   from: string;
+  id: string;
   to: string;
+  status: 'Pending' | 'Success' | 'Failed';
+  token: 'DAI' | 'USDC';
   transactionHash: string;
+  type: 'Transfer' | 'Approve' | 'Mint';
 }
 
 export interface HistorySlice {
   events: TokenEvent[];
+  optimisticEvents: TokenEvent[];
   eventsIsLoading: boolean;
   eventsErrorMessage: string | null;
   eventsActions: {
     fetchEvents: (walletAddress: string | undefined) => Promise<void>;
+    resetOptimisticEvents: () => void;
+    setOptimisticEvents: (event: TokenEvent) => void;
   };
 }
 
 export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice> = (set) => ({
   events: [],
+  optimisticEvents: [],
   eventsIsLoading: false,
   eventsErrorMessage: null,
   eventsActions: {
     fetchEvents: async (walletAddress) => {
       if (!walletAddress) {
-        set({ events: [], eventsIsLoading: false, eventsErrorMessage: null });
+        set({ events: [], optimisticEvents: [], eventsIsLoading: false, eventsErrorMessage: null });
         return;
       }
 
-      set({ eventsIsLoading: true, eventsErrorMessage: null });
+      set({ eventsErrorMessage: null });
 
       try {
         const events: TokenEvent[] = [];
@@ -108,12 +114,14 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
             const eventType = log.args.from === '0x0000000000000000000000000000000000000000' ? 'Mint' : 'Transfer';
 
             events.push({
-              token,
-              type: eventType,
               amount: formatUnits(log.args.value, tokenConfig.decimals),
               from: log.args.from,
+              id: log.transactionHash,
+              status: 'Success',
               to: log.args.to,
+              token,
               transactionHash: log.transactionHash,
+              type: eventType,
             });
           }
 
@@ -132,21 +140,29 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
             }
 
             events.push({
-              token,
-              type: 'Approve',
               amount: formatUnits(log.args.value, tokenConfig.decimals),
               from: log.args.owner,
+              id: log.transactionHash,
+              status: 'Success',
               to: log.args.spender,
+              token,
               transactionHash: log.transactionHash,
+              type: 'Approve',
             });
           }
         }
 
-        set({ events, eventsIsLoading: false, eventsErrorMessage: null });
+        set({ events, optimisticEvents: events, eventsIsLoading: false, eventsErrorMessage: null });
       } catch (error) {
         console.error('Error fetching events:', error);
-        set({ events: [], eventsIsLoading: false, eventsErrorMessage: 'Failed to fetch events' });
+        set({ events: [], optimisticEvents: [], eventsIsLoading: false, eventsErrorMessage: 'Failed to fetch events' });
       }
+    },
+    resetOptimisticEvents: () => {
+      set((state) => ({ optimisticEvents: state.events }));
+    },
+    setOptimisticEvents: (event: TokenEvent) => {
+      set((state) => ({ optimisticEvents: [...state.optimisticEvents, event] }));
     },
   },
 });

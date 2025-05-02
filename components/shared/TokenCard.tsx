@@ -31,7 +31,6 @@ export default function TokenCard({
           darkBorder: 'dark:border-yellow-600',
         };
 
-  console.log('tokenType', tokenType, balance);
   return (
     <div className="relative w-full transition-all duration-300 ease-in-out">
       <Card

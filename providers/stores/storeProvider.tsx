@@ -41,12 +41,16 @@ export const useDetailsActions = () => useStore((state) => state.detailsActions)
 export const useSelectedToken = () => useStore((state) => state.selectedToken);
 export const useSelectedTokenInfo = () =>
   useStore((state) => (state.selectedToken === 'DAI' ? state.daiBalance : state.usdcBalance));
-export const useBalanceActions = () => useStore((state) => state.balanceActions);
 export const useTransactionState = () => useStore((state) => state.transactionState);
+
+export const useBalanceActions = () => useStore((state) => state.balanceActions);
 export const useProfileActions = () => useStore((state) => state.detailsActions);
 
 export const useDaiBalances = () => useStore((state) => state.daiBalance);
 export const useUsdcBalances = () => useStore((state) => state.usdcBalance);
+
+export const useIsDaiPending = () => useStore((state) => state.daiBalance.loading);
+export const useIsUsdcPending = () => useStore((state) => state.usdcBalance.loading);
 
 /*//////////////////////////////////////////////////////////////
                       MINT ACTIONS & STATE
@@ -62,15 +66,21 @@ export const useMintActions = () => useStore((state) => state.mintActions);
 export const useTransferFormValues = () => useStore((state) => state.transfer.form);
 export const useTransferFormValidationErrors = () => useStore((state) => state.transfer.form.validationErrors);
 export const useTransferTransactionState = () => useStore((state) => state.transfer.transactionState);
+export const useTransferActions = () => useStore((state) => state.transferActions);
 
+/*//////////////////////////////////////////////////////////////
+                    APPROVE ACTIONS & STATE
+//////////////////////////////////////////////////////////////*/
 export const useApproveFormValues = () => useStore((state) => state.approve.form);
 export const useApproveFormValidationErrors = () => useStore((state) => state.approve.form.validationErrors);
 export const useApproveTransactionState = () => useStore((state) => state.approve.transactionState);
+export const useApproveActions = () => useStore((state) => state.approveActions);
 
 /*//////////////////////////////////////////////////////////////
                         TXS HISTORY STORE SLICE
 //////////////////////////////////////////////////////////////*/
 export const useEvents = () => useStore((state) => state.events);
+export const useOptimisticEvents = () => useStore((state) => state.optimisticEvents);
 export const useEventsLoading = () => useStore((state) => state.eventsIsLoading);
 export const useEventsError = () => useStore((state) => state.eventsErrorMessage);
 export const useEventsActions = () => useStore((state) => state.eventsActions);

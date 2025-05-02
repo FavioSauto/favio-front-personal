@@ -63,7 +63,6 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   ...props
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  // Local state to manage form fields within the dialog
   const [formFields, setFormFields] = useState<FormFields>({});
   // State for validation errors (optional, can be expanded)
   // const [errors, setErrors] = useState<Partial<FormFields>>({});
@@ -348,7 +347,9 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
           )}
           {...props}
         >
-          <div className={cn('transition-transform group-hover:scale-110', iconContainerClassName)}>{icon}</div>
+          <div className={cn('transition-transform group-hover:scale-110 [&_svg]:mr-0', iconContainerClassName)}>
+            {icon}
+          </div>
           <span className={cn(labelClassName)}>{label}</span>
         </Button>
       </DialogTrigger>

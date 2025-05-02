@@ -10,33 +10,40 @@ import type { AppState, TransactionState } from '@/types/global';
 
 interface TokenBalance {
   balance: string;
+  optimisticBalance: string;
   symbol: string;
   loading: boolean;
   error: string | null;
 }
 
-export interface TokenActionsSlice {
+export interface BalanceSlice {
   daiBalance: TokenBalance;
   usdcBalance: TokenBalance;
   transactionState: TransactionState;
   selectedToken: 'DAI' | 'USDC';
   balanceActions: {
     fetchTokenBalances: (walletAddress: string | undefined) => Promise<void>;
-    setSelectedToken: (token: 'DAI' | 'USDC') => void;
+    resetOptimisticBalance: () => void;
     resetTransactionState: () => void;
+    setIsDaiPending: (pending: boolean) => void;
+    setIsUsdcPending: (pending: boolean) => void;
+    setOptimisticBalance: (amount: string, txType: 'mint' | 'transfer' | 'approve') => void;
+    setSelectedToken: (token: 'DAI' | 'USDC') => void;
   };
 }
 
-export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenActionsSlice> = (set, get) => ({
+export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = (set, get) => ({
   selectedToken: 'DAI',
   daiBalance: {
     balance: '',
+    optimisticBalance: '',
     symbol: TOKENS.DAI.symbol,
     loading: true,
     error: null,
   },
   usdcBalance: {
     balance: '',
+    optimisticBalance: '',
     symbol: TOKENS.USDC.symbol,
     loading: true,
     error: null,
@@ -53,12 +60,14 @@ export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenAction
         set({
           daiBalance: {
             balance: '0',
+            optimisticBalance: '0',
             symbol: TOKENS.DAI.symbol,
             loading: false,
             error: null,
           },
           usdcBalance: {
             balance: '0',
+            optimisticBalance: '0',
             symbol: TOKENS.USDC.symbol,
             loading: false,
             error: null,
@@ -95,12 +104,14 @@ export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenAction
         set({
           daiBalance: {
             balance: formattedDaiBalance,
+            optimisticBalance: formattedDaiBalance,
             symbol: TOKENS.DAI.symbol,
             loading: false,
             error: null,
           },
           usdcBalance: {
             balance: formattedUsdcBalance,
+            optimisticBalance: formattedUsdcBalance,
             symbol: TOKENS.USDC.symbol,
             loading: false,
             error: null,
@@ -127,11 +138,16 @@ export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenAction
         }));
       }
     },
-    setSelectedToken: (token: 'DAI' | 'USDC') => {
-      set((state) => ({
-        ...state,
-        selectedToken: token,
-      }));
+    resetOptimisticBalance: () => {
+      set((state) => {
+        if (state.selectedToken === 'DAI') {
+          return {
+            daiBalance: { ...state.daiBalance, optimisticBalance: state.daiBalance.balance },
+          };
+        } else {
+          return { usdcBalance: { ...state.usdcBalance, optimisticBalance: state.usdcBalance.balance } };
+        }
+      });
     },
     resetTransactionState: () => {
       set({
@@ -142,6 +158,79 @@ export const createTokenActionsSlice: StateCreator<AppState, [], [], TokenAction
           txHash: null,
         },
       });
+    },
+    setIsDaiPending: (pending: boolean) => {
+      set((state) => ({
+        daiBalance: { ...state.daiBalance, loading: pending },
+      }));
+    },
+    setIsUsdcPending: (pending: boolean) => {
+      set((state) => ({
+        usdcBalance: { ...state.usdcBalance, loading: pending },
+      }));
+    },
+    setOptimisticBalance: (amount: string, txType: 'mint' | 'transfer' | 'approve') => {
+      set((state) => {
+        if (state.selectedToken === 'DAI') {
+          if (txType === 'mint') {
+            return {
+              ...state,
+              daiBalance: {
+                ...state.daiBalance,
+                optimisticBalance: (Number(state.daiBalance.balance) + Number(amount)).toString(),
+              },
+            };
+          } else if (txType === 'transfer') {
+            return {
+              ...state,
+              daiBalance: {
+                ...state.daiBalance,
+                optimisticBalance: (Number(state.daiBalance.balance) - Number(amount)).toString(),
+              },
+            };
+          } else {
+            return {
+              ...state,
+              daiBalance: {
+                ...state.daiBalance,
+                optimisticBalance: state.daiBalance.balance,
+              },
+            };
+          }
+        } else {
+          if (txType === 'mint') {
+            return {
+              ...state,
+              usdcBalance: {
+                ...state.usdcBalance,
+                optimisticBalance: (Number(state.usdcBalance.balance) + Number(amount)).toString(),
+              },
+            };
+          } else if (txType === 'transfer') {
+            return {
+              ...state,
+              usdcBalance: {
+                ...state.usdcBalance,
+                optimisticBalance: (Number(state.usdcBalance.balance) - Number(amount)).toString(),
+              },
+            };
+          } else {
+            return {
+              ...state,
+              usdcBalance: {
+                ...state.usdcBalance,
+                optimisticBalance: state.usdcBalance.balance,
+              },
+            };
+          }
+        }
+      });
+    },
+    setSelectedToken: (token: 'DAI' | 'USDC') => {
+      set((state) => ({
+        ...state,
+        selectedToken: token,
+      }));
     },
   },
 });

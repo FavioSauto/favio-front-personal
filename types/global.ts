@@ -3,7 +3,7 @@ import { HistorySlice } from '@/stores/slices/historySlice';
 import { MintSlice } from '@/stores/slices/mintSlice';
 import { NetworkSlice } from '@/stores/slices/networkSlice';
 import { ProfileSlice } from '@/stores/slices/profileSlice';
-import { TokenActionsSlice } from '@/stores/slices/tokenActionsSlice';
+import { BalanceSlice } from '@/stores/slices/balanceSlice';
 import { TransferSlice } from '@/stores/slices/transferSlice';
 import { ApproveSlice } from '@/stores/slices/approveSlice';
 
@@ -15,7 +15,7 @@ export interface TransactionState {
 }
 
 export type AppState = ProfileSlice &
-  TokenActionsSlice &
+  BalanceSlice &
   HistorySlice &
   NetworkSlice &
   ErrorSlice &

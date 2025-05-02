@@ -92,7 +92,6 @@ export function DataTable<TData, TValue>({
                     className="transition-colors duration-150 hover:bg-gray-50/50 dark:hover:bg-gray-700/30 border-b border-gray-100 dark:border-gray-700/50 last:border-b-0"
                   >
                     {row.getVisibleCells().map((cell) => {
-                      console.log(cell);
                       return (
                         <TableCell key={cell.id} className="py-3 text-gray-700 dark:text-gray-300">
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
