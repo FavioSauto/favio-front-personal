@@ -52,11 +52,21 @@ export default function TransactionHistoryTable() {
   const [actionFilter, setActionFilter] = useState<ActionFilterType>('ALL');
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  const eventsFilteredByToken = optimisticEvents.filter(
-    (event) => tableFilter === 'ALL' || event.token === tableFilter
-  );
+  console.log('optimisticEvents', optimisticEvents);
+  const eventsFilteredByToken =
+    optimisticEvents?.filter((event) => tableFilter === 'ALL' || event.token === tableFilter) ?? null;
 
-  const displayEvents = isWrongNetwork ? [] : eventsFilteredByToken;
+  const showEvents = !isWrongNetwork && eventsFilteredByToken;
+  const displayEvents = showEvents ? eventsFilteredByToken : [];
+
+  useEffect(
+    function fetchEventsOnMount() {
+      if (walletAddress && !showEvents) {
+        fetchEvents(walletAddress);
+      }
+    },
+    [walletAddress, fetchEvents, showEvents]
+  );
 
   useEffect(
     function updateActionFilter() {
@@ -262,8 +272,14 @@ export default function TransactionHistoryTable() {
       <CardContent className="pt-0">
         {eventsFetchError ? (
           <div className="text-center py-8 px-4">
-            <p className="text-red-600 dark:text-red-400 mb-4">{'Failed to load transaction history.'}</p>
-            <Button onClick={() => fetchEvents(walletAddress)} disabled={isRetryingEvents} size="sm">
+            <p className="mb-4">Failed to load transaction history.</p>
+            <Button
+              onClick={() => fetchEvents(walletAddress)}
+              disabled={isRetryingEvents}
+              size="sm"
+              className="cursor-pointer"
+              variant="outline"
+            >
               {isRetryingEvents ? 'Retrying...' : 'Retry'}
             </Button>
           </div>

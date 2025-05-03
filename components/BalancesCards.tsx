@@ -10,11 +10,9 @@ import { config } from '@/lib/config';
 import {
   useBalanceActions,
   useDaiBalances,
-  useEventsActions,
   useIsDaiPending,
   useIsUsdcPending,
   useIsWrongNetwork,
-  useProfileActions,
   useSelectedToken,
   useUsdcBalances,
 } from '@/providers/stores/storeProvider';
@@ -34,32 +32,17 @@ export default function BalancesCards() {
   const selectedToken = useSelectedToken();
   const usdcBalance = useUsdcBalances();
 
+  const haveBalancesLoadedCorrectly = daiBalance.balance && usdcBalance.balance;
+
   const { fetchTokenBalances } = useBalanceActions();
-  const { fetchEvents } = useEventsActions();
-  const { fetchProfile } = useProfileActions();
 
   useEffect(
     function fetchTokenBalancesAndEvents() {
-      if (walletAddress) {
+      if (walletAddress && !haveBalancesLoadedCorrectly) {
         fetchTokenBalances(walletAddress);
-        fetchEvents(walletAddress);
-      } else {
-        fetchTokenBalances(undefined);
-        fetchEvents(undefined);
       }
     },
-    [walletAddress, fetchTokenBalances, fetchEvents]
-  );
-
-  useEffect(
-    function fetchProfileState() {
-      if (walletAddress) {
-        fetchProfile(walletAddress);
-      } else {
-        console.error('Failed to fetch profile: walletAddress is undefined');
-      }
-    },
-    [walletAddress, fetchProfile]
+    [walletAddress, haveBalancesLoadedCorrectly, fetchTokenBalances]
   );
 
   const handleSwitchNetwork = async () => {

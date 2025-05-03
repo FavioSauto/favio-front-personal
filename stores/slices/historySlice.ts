@@ -31,8 +31,8 @@ export interface TokenEvent {
 }
 
 export interface HistorySlice {
-  events: TokenEvent[];
-  optimisticEvents: TokenEvent[];
+  events: TokenEvent[] | null;
+  optimisticEvents: TokenEvent[] | null;
   eventsIsLoading: boolean;
   eventsErrorMessage: string | null;
   eventsFetchError: boolean;
@@ -40,13 +40,13 @@ export interface HistorySlice {
   eventsActions: {
     fetchEvents: (walletAddress: string | undefined) => Promise<void>;
     resetOptimisticEvents: () => void;
-    setOptimisticEvents: (event: TokenEvent) => void;
+    setOptimisticEvents: (newEvent: TokenEvent) => void;
   };
 }
 
-export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice> = (set, get) => ({
-  events: [],
-  optimisticEvents: [],
+export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice> = (set) => ({
+  events: null,
+  optimisticEvents: null,
   eventsIsLoading: true,
   eventsErrorMessage: null,
   eventsFetchError: false,
@@ -55,8 +55,8 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
     fetchEvents: async (walletAddress) => {
       if (!walletAddress) {
         set({
-          events: [],
-          optimisticEvents: [],
+          events: null,
+          optimisticEvents: null,
           eventsIsLoading: false,
           eventsErrorMessage: null,
           eventsFetchError: false,
@@ -185,8 +185,8 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
       } catch (error) {
         console.error('Error fetching events:', error);
         set({
-          events: [],
-          optimisticEvents: get().events,
+          events: null,
+          optimisticEvents: null,
           eventsIsLoading: false,
           eventsErrorMessage: `Failed to fetch transaction history. ${
             error instanceof Error ? error.message : 'Please try again.'
@@ -199,8 +199,10 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
     resetOptimisticEvents: () => {
       set((state) => ({ optimisticEvents: state.events }));
     },
-    setOptimisticEvents: (event: TokenEvent) => {
-      set((state) => ({ optimisticEvents: [...state.optimisticEvents, event] }));
+    setOptimisticEvents: (newEvent: TokenEvent) => {
+      set((state) => ({
+        optimisticEvents: state.optimisticEvents ? [...state.optimisticEvents, newEvent] : [newEvent],
+      }));
     },
   },
 });

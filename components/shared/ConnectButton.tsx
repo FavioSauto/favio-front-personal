@@ -1,17 +1,33 @@
 'use client';
 
-import { useConnectModal, useAccountModal, useChainModal } from '@rainbow-me/rainbowkit';
-import { useAccount, useDisconnect } from 'wagmi';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
-import { useIsWrongNetwork, useNetworkActions } from '@/providers/stores/storeProvider';
+import { useAccount, useDisconnect } from 'wagmi';
+import { useConnectModal, useAccountModal, useChainModal } from '@rainbow-me/rainbowkit';
+
+import { cn } from '@/lib/utils';
+import { useIsWrongNetwork, useNetworkActions, useProfileActions } from '@/providers/stores/storeProvider';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 
 export default function ConnectButton() {
-  const { isConnecting, isConnected, chain } = useAccount();
-  const { setIsWrongNetwork } = useNetworkActions();
+  const { isConnecting, isConnected, chain, address: walletAddress } = useAccount();
+
   const isWrongNetwork = useIsWrongNetwork();
+
+  const { setIsWrongNetwork } = useNetworkActions();
+  const { fetchProfile } = useProfileActions();
+
+  useEffect(
+    function fetchProfileState() {
+      if (walletAddress) {
+        fetchProfile(walletAddress);
+      } else {
+        console.error('Failed to fetch profile: walletAddress is undefined');
+      }
+    },
+    [walletAddress, fetchProfile]
+  );
 
   useEffect(() => {
     if (isConnected && !chain) {

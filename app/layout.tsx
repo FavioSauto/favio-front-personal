@@ -22,7 +22,9 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <head>{/* <script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" /> */}</head>
+      <head>
+        <script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" />
+      </head>
       <body className="relative">
         <Providers cookie={cookie}>
           <WalletConnectionGuard>{children}</WalletConnectionGuard>

@@ -9,8 +9,8 @@ import { config } from '@/lib/config';
 import type { AppState, TransactionState } from '@/types/global';
 
 interface TokenBalance {
-  balance: string;
-  optimisticBalance: string;
+  balance: bigint | null;
+  optimisticBalance: bigint | null;
   symbol: string;
   loading: boolean;
   error: string | null;
@@ -35,15 +35,15 @@ export interface BalanceSlice {
 export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = (set, get) => ({
   selectedToken: 'DAI',
   daiBalance: {
-    balance: '',
-    optimisticBalance: '',
+    balance: null,
+    optimisticBalance: null,
     symbol: TOKENS.DAI.symbol,
     loading: true,
     error: null,
   },
   usdcBalance: {
-    balance: '',
-    optimisticBalance: '',
+    balance: null,
+    optimisticBalance: null,
     symbol: TOKENS.USDC.symbol,
     loading: true,
     error: null,
@@ -59,15 +59,15 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
       if (!walletAddress) {
         set({
           daiBalance: {
-            balance: '0',
-            optimisticBalance: '0',
+            balance: null,
+            optimisticBalance: null,
             symbol: TOKENS.DAI.symbol,
             loading: false,
             error: null,
           },
           usdcBalance: {
-            balance: '0',
-            optimisticBalance: '0',
+            balance: null,
+            optimisticBalance: null,
             symbol: TOKENS.USDC.symbol,
             loading: false,
             error: null,
@@ -103,15 +103,15 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
 
         set({
           daiBalance: {
-            balance: formattedDaiBalance,
-            optimisticBalance: formattedDaiBalance,
+            balance: BigInt(formattedDaiBalance),
+            optimisticBalance: BigInt(formattedDaiBalance),
             symbol: TOKENS.DAI.symbol,
             loading: false,
             error: null,
           },
           usdcBalance: {
-            balance: formattedUsdcBalance,
-            optimisticBalance: formattedUsdcBalance,
+            balance: BigInt(formattedUsdcBalance),
+            optimisticBalance: BigInt(formattedUsdcBalance),
             symbol: TOKENS.USDC.symbol,
             loading: false,
             error: null,
@@ -177,7 +177,7 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
               ...state,
               daiBalance: {
                 ...state.daiBalance,
-                optimisticBalance: (Number(state.daiBalance.balance) + Number(amount)).toString(),
+                optimisticBalance: (state.daiBalance.balance ?? BigInt(0)) + BigInt(amount),
               },
             };
           } else if (txType === 'transfer') {
@@ -185,7 +185,7 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
               ...state,
               daiBalance: {
                 ...state.daiBalance,
-                optimisticBalance: (Number(state.daiBalance.balance) - Number(amount)).toString(),
+                optimisticBalance: (state.daiBalance.balance ?? BigInt(0)) - BigInt(amount),
               },
             };
           } else {
@@ -203,7 +203,7 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
               ...state,
               usdcBalance: {
                 ...state.usdcBalance,
-                optimisticBalance: (Number(state.usdcBalance.balance) + Number(amount)).toString(),
+                optimisticBalance: (state.usdcBalance.balance ?? BigInt(0)) + BigInt(amount),
               },
             };
           } else if (txType === 'transfer') {
@@ -211,7 +211,7 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
               ...state,
               usdcBalance: {
                 ...state.usdcBalance,
-                optimisticBalance: (Number(state.usdcBalance.balance) - Number(amount)).toString(),
+                optimisticBalance: (state.usdcBalance.balance ?? BigInt(0)) - BigInt(amount),
               },
             };
           } else {
