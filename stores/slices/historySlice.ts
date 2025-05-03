@@ -38,7 +38,7 @@ export interface HistorySlice {
   eventsFetchError: boolean;
   isRetryingEvents: boolean;
   eventsActions: {
-    fetchEvents: (walletAddress: string | undefined) => Promise<void>;
+    fetchEvents: (walletAddress: string | undefined, showIsLoading?: boolean) => Promise<void>;
     resetOptimisticEvents: () => void;
     setOptimisticEvents: (newEvent: TokenEvent) => void;
   };
@@ -52,7 +52,7 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
   eventsFetchError: false,
   isRetryingEvents: false,
   eventsActions: {
-    fetchEvents: async (walletAddress) => {
+    fetchEvents: async (walletAddress, showIsLoading = true) => {
       if (!walletAddress) {
         set({
           events: null,
@@ -66,7 +66,7 @@ export const createHistorySlice: StateCreator<HistorySlice, [], [], HistorySlice
       }
 
       set({
-        eventsIsLoading: true,
+        eventsIsLoading: showIsLoading,
         eventsErrorMessage: null,
         eventsFetchError: false,
         isRetryingEvents: true,

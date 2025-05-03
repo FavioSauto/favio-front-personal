@@ -13,17 +13,20 @@ export default function WalletConnectionGuard({ children }: WalletConnectionGuar
   const router = useRouter();
   const pathname = usePathname();
 
-  useEffect(() => {
-    // Wait until the connection status is determined
-    if (isConnecting) {
-      return;
-    }
+  useEffect(
+    function redirectToRootIfNotConnected() {
+      // Wait until the connection status is determined
+      if (isConnecting) {
+        return;
+      }
 
-    // If not connected and not already on the root page, redirect to root
-    if (!isConnected && pathname !== '/') {
-      router.push('/');
-    }
-  }, [isConnected, isConnecting, router, pathname]);
+      // If not connected and not already on the root page, redirect to root
+      if (!isConnected && pathname !== '/') {
+        router.push('/');
+      }
+    },
+    [isConnected, isConnecting, router, pathname]
+  );
 
   // While connecting or if redirecting, potentially show a loader or nothing
   // Or only render children if connected or on the root page

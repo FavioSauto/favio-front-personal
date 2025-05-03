@@ -29,13 +29,16 @@ export default function ConnectButton() {
     [walletAddress, fetchProfile]
   );
 
-  useEffect(() => {
-    if (isConnected && !chain) {
-      setIsWrongNetwork(true);
-    } else {
-      setIsWrongNetwork(false);
-    }
-  }, [isConnected, chain, setIsWrongNetwork]);
+  useEffect(
+    function setIsWrongNetworkState() {
+      if (isConnected && !chain) {
+        setIsWrongNetwork(true);
+      } else {
+        setIsWrongNetwork(false);
+      }
+    },
+    [isConnected, chain, setIsWrongNetwork]
+  );
 
   const { openConnectModal } = useConnectModal();
   const { openAccountModal } = useAccountModal();

@@ -9,8 +9,8 @@ import { config } from '@/lib/config';
 import type { AppState, TransactionState } from '@/types/global';
 
 interface TokenBalance {
-  balance: bigint | null;
-  optimisticBalance: bigint | null;
+  balance: string | null;
+  optimisticBalance: string | null;
   symbol: string;
   loading: boolean;
   error: string | null;
@@ -103,15 +103,15 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
 
         set({
           daiBalance: {
-            balance: BigInt(formattedDaiBalance),
-            optimisticBalance: BigInt(formattedDaiBalance),
+            balance: formattedDaiBalance,
+            optimisticBalance: formattedDaiBalance,
             symbol: TOKENS.DAI.symbol,
             loading: false,
             error: null,
           },
           usdcBalance: {
-            balance: BigInt(formattedUsdcBalance),
-            optimisticBalance: BigInt(formattedUsdcBalance),
+            balance: formattedUsdcBalance,
+            optimisticBalance: formattedUsdcBalance,
             symbol: TOKENS.USDC.symbol,
             loading: false,
             error: null,
@@ -177,7 +177,7 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
               ...state,
               daiBalance: {
                 ...state.daiBalance,
-                optimisticBalance: (state.daiBalance.balance ?? BigInt(0)) + BigInt(amount),
+                optimisticBalance: (Number(state.daiBalance.balance) + Number(amount)).toString(),
               },
             };
           } else if (txType === 'transfer') {
@@ -185,7 +185,7 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
               ...state,
               daiBalance: {
                 ...state.daiBalance,
-                optimisticBalance: (state.daiBalance.balance ?? BigInt(0)) - BigInt(amount),
+                optimisticBalance: (Number(state.daiBalance.balance) - Number(amount)).toString(),
               },
             };
           } else {
@@ -203,7 +203,7 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
               ...state,
               usdcBalance: {
                 ...state.usdcBalance,
-                optimisticBalance: (state.usdcBalance.balance ?? BigInt(0)) + BigInt(amount),
+                optimisticBalance: (Number(state.usdcBalance.balance) + Number(amount)).toString(),
               },
             };
           } else if (txType === 'transfer') {
@@ -211,7 +211,7 @@ export const createBalanceSlice: StateCreator<AppState, [], [], BalanceSlice> = 
               ...state,
               usdcBalance: {
                 ...state.usdcBalance,
-                optimisticBalance: (state.usdcBalance.balance ?? BigInt(0)) - BigInt(amount),
+                optimisticBalance: (Number(state.usdcBalance.balance) - Number(amount)).toString(),
               },
             };
           } else {

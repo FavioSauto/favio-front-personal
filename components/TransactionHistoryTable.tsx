@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ColumnDef, ColumnFiltersState } from '@tanstack/react-table';
+import { RotateCcw } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import {
@@ -52,12 +53,17 @@ export default function TransactionHistoryTable() {
   const [actionFilter, setActionFilter] = useState<ActionFilterType>('ALL');
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
-  console.log('optimisticEvents', optimisticEvents);
   const eventsFilteredByToken =
     optimisticEvents?.filter((event) => tableFilter === 'ALL' || event.token === tableFilter) ?? null;
 
   const showEvents = !isWrongNetwork && eventsFilteredByToken;
   const displayEvents = showEvents ? eventsFilteredByToken : [];
+
+  function refreshEvents() {
+    const showLoadingMessage = eventsFetchError;
+
+    fetchEvents(walletAddress, showLoadingMessage);
+  }
 
   useEffect(
     function fetchEventsOnMount() {
@@ -177,8 +183,12 @@ export default function TransactionHistoryTable() {
   return (
     <Card className="rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800/30 transition-all duration-300 hover:shadow-md">
       <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 gap-3 lg:flex-col lg:items-start lg:justify-start">
-        <CardTitle className="text-base font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap flex-shrink-0">
+        <CardTitle className="text-base font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap flex-shrink-0 flex items-center justify-between w-full">
           Recent Transactions
+          <Button size="sm" variant="outline" onClick={refreshEvents} disabled={isRetryingEvents}>
+            <RotateCcw className="w-4 h-4" />
+            {/* {isRetryingEvents ? 'Retrying...' : 'Retry'} */}
+          </Button>
         </CardTitle>
         <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2 w-full">
           <div className="flex items-center gap-2 flex-wrap">

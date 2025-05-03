@@ -68,12 +68,15 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   // const [errors, setErrors] = useState<Partial<FormFields>>({});
 
   // Reset form fields when dialog opens/closes or label changes
-  useEffect(() => {
-    if (!isOpen) {
-      setFormFields({});
-      // setErrors({});
-    }
-  }, [isOpen, label]);
+  useEffect(
+    function resetFormFields() {
+      if (!isOpen) {
+        setFormFields({});
+        // setErrors({});
+      }
+    },
+    [isOpen, label]
+  );
 
   const getStepValue = () => {
     if (tokenDecimals <= 0) {
