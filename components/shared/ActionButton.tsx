@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 import { cn, formatValueOnInputChange } from '@/lib/utils';
 
@@ -18,11 +18,6 @@ import { Label } from '@/components/ui/label';
 
 // Define specific types for form data fields
 // Using string to handle potential large numbers and decimals easily before conversion
-interface FormFields {
-  address?: string;
-  amount?: string; // Covers mint amount, transfer amount
-  allowance?: string; // Covers approve allowance
-}
 
 export interface MintFormData {
   amount: string;
@@ -53,7 +48,234 @@ interface ActionButtonProps extends ButtonProps {
   onFormSubmit?: (data: ActionFormData) => void; // Use specific type for form submission
 }
 
-export const ActionButton: React.FC<ActionButtonProps> = ({
+// Helper function to get step value based on decimals
+function getStepValue(tokenDecimals: number): string {
+  if (tokenDecimals <= 0) {
+    return '1'; // Whole numbers if 0 decimals
+  }
+  return `0.${'0'.repeat(tokenDecimals - 1)}1`;
+}
+
+// --- Mint Form Component ---
+interface MintFormProps {
+  tokenDecimals: number;
+  onSubmit: (data: MintFormData) => void;
+  onClose: () => void;
+}
+
+function MintForm({ tokenDecimals, onSubmit, onClose }: MintFormProps) {
+  const [amount, setAmount] = useState('');
+  const stepValue = getStepValue(tokenDecimals);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = event.target;
+    const processedValue = formatValueOnInputChange(value, tokenDecimals);
+    setAmount(processedValue);
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!amount) {
+      console.error('Missing required field: amount');
+      return;
+    }
+    onSubmit({ amount });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="amount" className="text-right">
+            Amount
+          </Label>
+          <Input
+            id="amount"
+            name="amount"
+            type="text"
+            inputMode="decimal"
+            placeholder={`Amount to mint (up to ${tokenDecimals} decimals)`}
+            className="col-span-3"
+            value={amount}
+            onChange={handleInputChange}
+            step={stepValue}
+            required
+            autoFocus // Focus the first input
+          />
+        </div>
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </DialogClose>
+        <Button type="submit">Mint</Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+// --- Transfer Form Component ---
+interface TransferFormProps {
+  tokenDecimals: number;
+  onSubmit: (data: TransferFormData) => void;
+  onClose: () => void;
+}
+
+function TransferForm({ tokenDecimals, onSubmit, onClose }: TransferFormProps) {
+  const [address, setAddress] = useState('');
+  const [amount, setAmount] = useState('');
+  const stepValue = getStepValue(tokenDecimals);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    if (name === 'address') {
+      setAddress(value);
+    } else if (name === 'amount') {
+      const processedValue = formatValueOnInputChange(value, tokenDecimals);
+      setAmount(processedValue);
+    }
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!address || !amount) {
+      console.error('Missing required fields: address or amount');
+      return;
+    }
+    onSubmit({ address, amount });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="address" className="text-right">
+            Address
+          </Label>
+          <Input
+            id="address"
+            name="address"
+            placeholder="Recipient wallet address"
+            className="col-span-3"
+            value={address}
+            onChange={handleInputChange}
+            required
+            autoFocus // Focus the first input
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="amount" className="text-right">
+            Amount
+          </Label>
+          <Input
+            id="amount"
+            name="amount"
+            type="text"
+            inputMode="decimal"
+            placeholder={`Amount to transfer (up to ${tokenDecimals} decimals)`}
+            className="col-span-3"
+            value={amount}
+            onChange={handleInputChange}
+            step={stepValue}
+            required
+          />
+        </div>
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </DialogClose>
+        <Button type="submit">Transfer</Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+// --- Approve Form Component ---
+interface ApproveFormProps {
+  tokenDecimals: number;
+  onSubmit: (data: ApproveFormData) => void;
+  onClose: () => void;
+}
+
+function ApproveForm({ tokenDecimals, onSubmit, onClose }: ApproveFormProps) {
+  const [address, setAddress] = useState('');
+  const [allowance, setAllowance] = useState('');
+  const stepValue = getStepValue(tokenDecimals);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    if (name === 'address') {
+      setAddress(value);
+    } else if (name === 'allowance') {
+      const processedValue = formatValueOnInputChange(value, tokenDecimals);
+      setAllowance(processedValue);
+    }
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!address || !allowance) {
+      console.error('Missing required fields: address or allowance');
+      return;
+    }
+    onSubmit({ address, allowance });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="address" className="text-right">
+            Spender
+          </Label>
+          <Input
+            id="address"
+            name="address"
+            placeholder="Spender wallet address"
+            className="col-span-3"
+            value={address}
+            onChange={handleInputChange}
+            required
+            autoFocus // Focus the first input
+          />
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="allowance" className="text-right">
+            Allowance
+          </Label>
+          <Input
+            id="allowance"
+            name="allowance"
+            type="text"
+            inputMode="decimal"
+            placeholder={`Allowance amount (up to ${tokenDecimals} decimals)`}
+            className="col-span-3"
+            value={allowance}
+            onChange={handleInputChange}
+            step={stepValue}
+            required
+          />
+        </div>
+      </div>
+      <DialogFooter>
+        <DialogClose asChild>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+        </DialogClose>
+        <Button type="submit">Approve</Button>
+      </DialogFooter>
+    </form>
+  );
+}
+
+// --- Main ActionButton Component ---
+export function ActionButton({
   icon,
   label,
   tokenDecimals = 0, // Default to 0 decimals if not provided
@@ -63,217 +285,46 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
   variant = 'outline', // Default variant
   onFormSubmit,
   ...props
-}) => {
+}: ActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [formFields, setFormFields] = useState<FormFields>({});
 
-  // Reset form fields when dialog opens/closes or label changes
-  useEffect(
-    function resetFormFields() {
-      if (!isOpen) {
-        setFormFields({});
-        // setErrors({});
-      }
-    },
-    [isOpen, label]
-  );
+  const handleFormSubmitWrapper = (data: ActionFormData) => {
+    onFormSubmit?.(data);
+    setIsOpen(false); // Close the dialog on successful submission
+  };
 
-  function getStepValue() {
-    if (tokenDecimals <= 0) {
-      return '1'; // Whole numbers if 0 decimals
-    }
-    return `0.${'0'.repeat(tokenDecimals - 1)}1`;
-  }
+  const handleDialogClose = () => {
+    setIsOpen(false);
+  };
 
-  function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = event.target;
-
-    if (name === 'address') {
-      // Allow any input for address for now
-      setFormFields((prev) => ({ ...prev, [name]: value }));
-      return;
-    }
-
-    if (name === 'amount' || name === 'allowance') {
-      const decimals = tokenDecimals;
-      const processedValue = formatValueOnInputChange(value, decimals);
-
-      // Update state
-      setFormFields((prev) => ({ ...prev, [name]: processedValue }));
-    }
-  }
-
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    // Basic validation check - ensure required fields are filled
-    // This could be enhanced with more specific error messages
-    const requiredFields = getRequiredFields(label);
-    for (const field of requiredFields) {
-      if (!formFields[field as keyof FormFields]) {
-        console.error(`Missing required field: ${field}`);
-        // Optionally set error state here
-        return; // Prevent submission
-      }
-    }
-
-    let structuredData: ActionFormData;
-
-    switch (label.toLowerCase()) {
-      case 'mint':
-        if (formFields.amount !== undefined) {
-          structuredData = { amount: formFields.amount };
-        } else {
-          console.error('Mint action missing amount');
-          return;
-        }
-        break;
-      case 'transfer':
-        if (formFields.address !== undefined && formFields.amount !== undefined) {
-          structuredData = { address: formFields.address, amount: formFields.amount };
-        } else {
-          console.error('Transfer action missing fields');
-          return;
-        }
-        break;
-      case 'approve':
-        if (formFields.address !== undefined && formFields.allowance !== undefined) {
-          structuredData = { address: formFields.address, allowance: formFields.allowance };
-        } else {
-          console.error('Approve action missing fields');
-          return;
-        }
-        break;
-      default:
-        console.error('Unknown action type:', label);
-        setIsOpen(false);
-        return;
-    }
-
-    onFormSubmit?.(structuredData);
-    setIsOpen(false); // Close the dialog
-  }
-
-  // Helper to determine required fields based on action label
-  function getRequiredFields(actionLabel: string): string[] {
-    switch (actionLabel.toLowerCase()) {
-      case 'mint':
-        return ['amount'];
-      case 'transfer':
-        return ['address', 'amount'];
-      case 'approve':
-        return ['address', 'allowance'];
-      default:
-        return [];
-    }
-  }
-
-  function renderFormContent() {
-    const stepValue = getStepValue();
-
+  function renderForm() {
     switch (label.toLowerCase()) {
       case 'mint':
         return (
-          <>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="amount" className="text-right">
-                  Amount
-                </Label>
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="text" // Change to text
-                  inputMode="decimal" // Hint for mobile keyboards
-                  placeholder={`Amount to mint (up to ${tokenDecimals} decimals)`}
-                  className="col-span-3"
-                  value={formFields.amount || ''} // Controlled input
-                  onChange={handleInputChange} // Use change handler
-                  step={stepValue} // Set step for number spinners (though type="text")
-                  // pattern={amountPattern} // Remove pattern for HTML validation
-                  required
-                />
-              </div>
-            </div>
-          </>
+          <MintForm
+            key={label} // Reset form state when label changes
+            tokenDecimals={tokenDecimals}
+            onSubmit={handleFormSubmitWrapper as (data: MintFormData) => void}
+            onClose={handleDialogClose}
+          />
         );
       case 'transfer':
         return (
-          <>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="address" className="text-right">
-                  Address
-                </Label>
-                <Input
-                  id="address"
-                  name="address"
-                  placeholder="Recipient wallet address"
-                  className="col-span-3"
-                  value={formFields.address || ''} // Controlled input
-                  onChange={handleInputChange} // Use change handler
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="amount" className="text-right">
-                  Amount
-                </Label>
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="text" // Change to text
-                  inputMode="decimal" // Hint for mobile keyboards
-                  placeholder={`Amount to transfer (up to ${tokenDecimals} decimals)`}
-                  className="col-span-3"
-                  value={formFields.amount || ''} // Controlled input
-                  onChange={handleInputChange} // Use change handler
-                  step={stepValue} // Set step for number spinners (though type="text")
-                  // pattern={amountPattern} // Remove pattern for HTML validation
-                  required
-                />
-              </div>
-            </div>
-          </>
+          <TransferForm
+            key={label}
+            tokenDecimals={tokenDecimals}
+            onSubmit={handleFormSubmitWrapper as (data: TransferFormData) => void}
+            onClose={handleDialogClose}
+          />
         );
       case 'approve':
         return (
-          <>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="address" className="text-right">
-                  Spender
-                </Label>
-                <Input
-                  id="address"
-                  name="address"
-                  placeholder="Spender wallet address"
-                  className="col-span-3"
-                  value={formFields.address || ''} // Controlled input
-                  onChange={handleInputChange} // Use change handler
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="allowance" className="text-right">
-                  Allowance
-                </Label>
-                <Input
-                  id="allowance"
-                  name="allowance"
-                  type="text" // Change to text
-                  inputMode="decimal" // Hint for mobile keyboards
-                  placeholder={`Allowance amount (up to ${tokenDecimals} decimals)`}
-                  className="col-span-3"
-                  value={formFields.allowance || ''} // Controlled input
-                  onChange={handleInputChange} // Use change handler
-                  step={stepValue} // Set step for number spinners (though type="text")
-                  // pattern={amountPattern} // Remove pattern for HTML validation
-                  required
-                />
-              </div>
-            </div>
-          </>
+          <ApproveForm
+            key={label}
+            tokenDecimals={tokenDecimals}
+            onSubmit={handleFormSubmitWrapper as (data: ApproveFormData) => void}
+            onClose={handleDialogClose}
+          />
         );
       default:
         return <p>No action defined for this button.</p>;
@@ -303,19 +354,8 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
           <DialogTitle>{label}</DialogTitle>
           <DialogDescription>{`Enter the details below to ${label.toLowerCase()} tokens.`}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <>{renderFormContent()}</>
-
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button type="submit">{label}</Button>
-          </DialogFooter>
-        </form>
+        {renderForm()}
       </DialogContent>
     </Dialog>
   );
-};
+}
