@@ -75,7 +75,7 @@ export default function ActionButtonsCard() {
 
       if (walletAddress) {
         await fetchTokenBalances(walletAddress);
-        await fetchEvents(walletAddress);
+        await fetchEvents(walletAddress, false);
       }
     } catch (error) {
       console.error(`[handleMint ${tokenType}] Error caught:`, error);
@@ -117,7 +117,7 @@ export default function ActionButtonsCard() {
 
       if (walletAddress) {
         await fetchTokenBalances(walletAddress);
-        await fetchEvents(walletAddress);
+        await fetchEvents(walletAddress, false);
       }
     } catch (error) {
       console.error(`[handleTransfer ${tokenType}] Error caught:`, error);
@@ -155,7 +155,7 @@ export default function ActionButtonsCard() {
       await waitForTransactionReceipt(config, { hash: txHash });
 
       if (walletAddress) {
-        await fetchEvents(walletAddress);
+        await fetchEvents(walletAddress, false);
       }
     } catch (error) {
       console.error(`[handleApprove ${tokenType}] Error caught:`, error);
