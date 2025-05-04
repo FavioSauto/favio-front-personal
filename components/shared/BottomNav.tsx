@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, PieChart } from 'lucide-react';
+import { LayoutDashboard, PieChart, History } from 'lucide-react';
 import clsx from 'clsx';
 
 interface BottomNavProps {
@@ -23,6 +23,16 @@ export const BottomNav: React.FC<BottomNavProps> = () => {
         >
           <LayoutDashboard className="w-5 h-5" />
           <span className="text-xs font-medium">Dashboard</span>
+        </Link>
+        <Link
+          href="/approvals"
+          className={clsx(
+            'flex flex-col items-center justify-center gap-1 transition-colors hover:text-indigo-500',
+            pathname === '/approvals' ? 'text-indigo-600' : 'text-gray-500'
+          )}
+        >
+          <History className="w-5 h-5" />
+          <span className="text-xs font-medium">Approvals</span>
         </Link>
         <Link
           href="/stats"
