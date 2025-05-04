@@ -28,9 +28,9 @@ import {
   DialogDescription,
   DialogClose,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 
 import { DataTable } from '@/components/shared/DataTable';
+import TransactionInfoContent from '@/components/TransactionInfoContent';
 
 interface OptimisticEvent {
   amount: string;
@@ -380,98 +380,7 @@ export default function TransactionHistoryTable() {
               Detailed information about the selected transaction event.
             </DialogDescription>
           </DialogHeader>
-
-          {selectedEvent && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Type:</span>
-                <span className="font-semibold text-gray-800 dark:text-gray-200">{selectedEvent.type}</span>
-              </div>
-              <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Status:</span>
-                <Badge
-                  variant={selectedEvent.status === 'Failed' ? 'destructive' : 'secondary'}
-                  className={cn(
-                    'text-xs',
-                    selectedEvent.status === 'Success' &&
-                      'bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-200',
-                    selectedEvent.status === 'Pending' &&
-                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/30 dark:text-yellow-200 opacity-80 italic'
-                  )}
-                >
-                  {selectedEvent.status}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Amount:</span>
-                <span className="text-gray-800 dark:text-gray-200">{Number(selectedEvent.amount).toFixed(2)}</span>
-              </div>
-              <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Token:</span>
-                <Badge
-                  variant={'secondary'}
-                  className={cn(
-                    'text-xs',
-                    selectedEvent.token === 'DAI'
-                      ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800/30 dark:text-yellow-200'
-                      : 'bg-blue-100 text-blue-800 dark:bg-blue-800/30 dark:text-blue-200'
-                  )}
-                >
-                  {selectedEvent.token}
-                </Badge>
-              </div>
-
-              {/* Conditional Fields based on Type */}
-              {selectedEvent.type === 'Transfer' && selectedEvent.from && (
-                <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">From:</span>
-                  <span className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
-                    {selectedEvent.from}
-                  </span>
-                </div>
-              )}
-
-              {selectedEvent.type === 'Transfer' && selectedEvent.recipient && (
-                <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Recipient:</span>
-                  <span className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
-                    {selectedEvent.recipient}
-                  </span>
-                </div>
-              )}
-
-              {selectedEvent.type === 'Approve' && selectedEvent.spender && (
-                <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Spender:</span>
-                  <span className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
-                    {selectedEvent.spender}
-                  </span>
-                </div>
-              )}
-
-              {/* Transaction Hash */}
-              {selectedEvent.transactionHash && (
-                <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Tx Hash:</span>
-                  <a
-                    href={`https://sepolia.etherscan.io/tx/${selectedEvent.transactionHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-mono text-blue-600 hover:underline dark:text-blue-400 break-all flex items-center gap-1"
-                  >
-                    {selectedEvent.transactionHash}
-                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                  </a>
-                </div>
-              )}
-
-              {/* Event ID (useful for debugging) */}
-              <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Event ID:</span>
-                <span className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{selectedEvent.id}</span>
-              </div>
-            </div>
-          )}
+          {selectedEvent && <TransactionInfoContent event={selectedEvent} />}
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline">
