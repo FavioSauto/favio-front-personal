@@ -8,3 +8,4 @@
 [] Move table definitions to another file (Figure out which file)
 [] Approval improvements
 [] Figure out how to listen for new events associated with a wallet (e.g. A user transfers funds to the active user of the app the active user should receive a notification and the new transfer event should be added to the table).
+[] Try making cardbalances and transactionhistorytable a react server component

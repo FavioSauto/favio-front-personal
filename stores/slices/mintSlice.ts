@@ -5,6 +5,7 @@ import { StateCreator } from 'zustand';
 
 import { ERC20_ABI, TOKENS } from '@/lib/contractsAbi';
 import { config } from '@/lib/config';
+import { formatValueOnInputChange } from '@/lib/utils';
 
 import type { AppState, TransactionState } from '@/types/global';
 
@@ -42,9 +43,13 @@ export const createMintSlice: StateCreator<AppState, [], [], MintSlice> = (set, 
     },
   },
   mintActions: {
-    setMintAmount: (amount: string) => {
+    setMintAmount: (value: string) => {
+      const decimals = get().selectedToken === 'DAI' ? 18 : 6;
+      const processedValue = formatValueOnInputChange(value, decimals);
+
+      // Update state
       set((state) => ({
-        mint: { ...state.mint, form: { ...state.mint.form, amount } },
+        mint: { ...state.mint, form: { ...state.mint.form, amount: processedValue } },
       }));
     },
     setMintFormValidationErrors: (errors: { amount?: string }) => {
