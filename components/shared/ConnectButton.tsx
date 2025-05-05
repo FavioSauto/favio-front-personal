@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAccount, useDisconnect } from 'wagmi';
 import { useConnectModal, useAccountModal, useChainModal } from '@rainbow-me/rainbowkit';
 
@@ -11,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 
 export default function ConnectButton() {
+  const router = useRouter();
   const { isConnecting, isConnected, chain, address: walletAddress } = useAccount();
 
   const isWrongNetwork = useIsWrongNetwork();
@@ -37,13 +39,27 @@ export default function ConnectButton() {
         setIsWrongNetwork(false);
       }
     },
-    [isConnected, chain, setIsWrongNetwork]
+    [isConnected, chain, setIsWrongNetwork, router]
   );
 
   const { openConnectModal } = useConnectModal();
   const { openAccountModal } = useAccountModal();
   const { openChainModal } = useChainModal();
   const { disconnect } = useDisconnect();
+
+  const prevIsConnected = useRef(isConnected);
+
+  useEffect(
+    function redirectToDashboardOnSuccessfulLogInOnly() {
+      if (!prevIsConnected.current && isConnected && !isConnecting) {
+        // Only redirect if we just connected
+        router.push('/dashboard');
+      }
+      // Update the ref after the check
+      prevIsConnected.current = isConnected;
+    },
+    [isConnected, isConnecting, router]
+  );
 
   if (!isConnected) {
     return (
